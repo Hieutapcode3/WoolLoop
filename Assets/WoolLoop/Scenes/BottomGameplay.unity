@@ -166,7 +166,6 @@ MonoBehaviour:
   levelJson: {fileID: 4900000, guid: 5cdad5651e9c6b348bf86d6c40053c54, type: 3}
   cellRoot: {fileID: 820868200}
   frameRoot: {fileID: 1253391103}
-  cellPrefabOverride: {fileID: 0}
   frameMaterial: {fileID: 2100000, guid: b03b41fcefe87504aac028916ad6685a, type: 2}
   generateOnStart: 1
   frameTubeSize: 0.12
@@ -909,13 +908,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2038628606}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.2955947, y: 8, z: -31.03611}
+  m_LocalRotation: {x: 0.6296595, y: 0, z: 0, w: 0.7768713}
+  m_LocalPosition: {x: 5.2955947, y: 24.3, z: -3.7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1745417368}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 78.05, y: 0, z: 0}
 --- !u!114 &2038628608
 MonoBehaviour:
   m_ObjectHideFlags: 0
