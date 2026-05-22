@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 public partial class YarnBoardEditorWindow : EditorWindow
 {
     private const int MaxBoardSize = 16;
+    private const float NarrowLayoutThreshold = 1080f;
     private const string UxmlPath = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/UXML/YarnBoardEditorWindow.uxml";
     private const string UssPath = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/USS/YarnBoardEditorWindow.uss";
     private const string DefaultLevelFolder = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/Levels";
@@ -72,7 +73,10 @@ public partial class YarnBoardEditorWindow : EditorWindow
     private bool _isDirty;
     private bool _isDragging;
     private string _searchText = string.Empty;
+    private bool _isNarrowLayout;
+    private bool _pendingDragRefresh;
 
+    private VisualElement _rootContainer;
     private TextField _levelSearch;
     private ListView _levelList;
     private Button _newLevelButton;
@@ -118,6 +122,7 @@ public partial class YarnBoardEditorWindow : EditorWindow
             rootVisualElement.styleSheets.Add(style);
 
         CacheElements();
+        BindResponsiveLayout();
         LoadFirstColorProfile();
         BindNavigation();
         BindWorkspace();
@@ -127,6 +132,7 @@ public partial class YarnBoardEditorWindow : EditorWindow
 
     private void CacheElements()
     {
+        _rootContainer = rootVisualElement.Q<VisualElement>(className: "yarn-editor-root");
         _levelSearch = rootVisualElement.Q<TextField>("levelSearch");
         _levelList = rootVisualElement.Q<ListView>("levelList");
         _newLevelButton = rootVisualElement.Q<Button>("newLevelButton");
@@ -150,6 +156,33 @@ public partial class YarnBoardEditorWindow : EditorWindow
         _hoverCellLabel = rootVisualElement.Q<Label>("hoverCellLabel");
     }
 
+    private void BindResponsiveLayout()
+    {
+        if (_rootContainer == null)
+            return;
+
+        rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
+        UpdateResponsiveLayout(rootVisualElement.layout.width);
+    }
+
+    private void OnRootGeometryChanged(GeometryChangedEvent evt)
+    {
+        UpdateResponsiveLayout(evt.newRect.width);
+    }
+
+    private void UpdateResponsiveLayout(float width)
+    {
+        if (_rootContainer == null || width <= 0f)
+            return;
+
+        bool narrow = width < NarrowLayoutThreshold;
+        if (narrow == _isNarrowLayout)
+            return;
+
+        _isNarrowLayout = narrow;
+        _rootContainer.EnableInClassList("narrow", narrow);
+    }
+
     private void RefreshAll()
     {
         EnsureCurrentLevelShape();
@@ -165,6 +198,57 @@ public partial class YarnBoardEditorWindow : EditorWindow
     {
         _isDirty = true;
         RefreshAll();
+    }
+
+    private void MarkDirtyForCell(Vector2Int cell)
+    {
+        _isDirty = true;
+
+        if (_isDragging && (_currentTool == EditorToolMode.Paint || _currentTool == EditorToolMode.Erase))
+        {
+            UpdateCellVisual(cell);
+            _pendingDragRefresh = true;
+            RefreshStatus();
+            return;
+        }
+
+        RefreshAll();
+    }
+
+    private void UpdateCellVisual(Vector2Int cell)
+    {
+        if (!_cellViews.TryGetValue(cell, out VisualElement cellView))
+            return;
+
+        cellView.Clear();
+        cellView.EnableInClassList("active", IsActiveCell(cell));
+        cellView.EnableInClassList("blocked", !IsActiveCell(cell));
+        cellView.EnableInClassList("selected", cell == _selectedCell);
+        cellView.EnableInClassList("error", _errorCells.Contains(cell));
+
+        WoolBallData ball = FindBallAt(cell);
+        if (ball != null)
+        {
+            VisualElement dot = new VisualElement();
+            dot.AddToClassList("yarn-dot");
+            if (ball.tileId != cell)
+                dot.AddToClassList("child");
+            dot.style.backgroundColor = GetColorForBall(ball.ColorId);
+            cellView.Add(dot);
+        }
+    }
+
+    private void EndDrag()
+    {
+        if (!_isDragging && !_pendingDragRefresh)
+            return;
+
+        _isDragging = false;
+        if (_pendingDragRefresh)
+        {
+            _pendingDragRefresh = false;
+            RefreshAll();
+        }
     }
 
     private void LoadFirstColorProfile()
