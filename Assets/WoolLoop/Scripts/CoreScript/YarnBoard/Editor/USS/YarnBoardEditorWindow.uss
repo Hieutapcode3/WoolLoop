@@ -1,0 +1,281 @@
+.yarn-editor-root {
+    flex-direction: row;
+    flex-grow: 1;
+    background-color: #202124;
+    color: #d8d8d8;
+}
+
+.panel {
+    background-color: #2a2b2f;
+    border-right-width: 1px;
+    border-right-color: #17181a;
+    padding: 12px;
+}
+
+.nav-panel {
+    width: 240px;
+    min-width: 240px;
+}
+
+.inspector-panel {
+    width: 280px;
+    min-width: 280px;
+    border-left-width: 1px;
+    border-left-color: #17181a;
+    border-right-width: 0;
+}
+
+.panel-title {
+    font-size: 15px;
+    -unity-font-style: bold;
+    margin-bottom: 12px;
+}
+
+.search-field {
+    margin-bottom: 8px;
+}
+
+.level-list {
+    flex-grow: 1;
+    border-top-width: 1px;
+    border-top-color: #3a3b40;
+    border-bottom-width: 1px;
+    border-bottom-color: #3a3b40;
+}
+
+.level-item {
+    height: 34px;
+    padding-left: 8px;
+    justify-content: center;
+    border-left-width: 3px;
+    border-left-color: rgba(0, 0, 0, 0);
+}
+
+.level-item.selected {
+    background-color: #3a4658;
+    border-left-color: #6aa9ff;
+}
+
+.panel-footer {
+    flex-direction: row;
+    margin-top: 12px;
+}
+
+.workspace-panel {
+    flex-grow: 1;
+    min-width: 360px;
+    background-color: #242529;
+}
+
+.toolbar {
+    height: 44px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-bottom-width: 1px;
+    border-bottom-color: #17181a;
+    background-color: #2d2e33;
+}
+
+.toolbar-group {
+    flex-direction: row;
+    align-items: center;
+    margin-right: 12px;
+}
+
+.tool-group {
+    border-left-width: 1px;
+    border-left-color: #3f4045;
+    padding-left: 12px;
+}
+
+.toolbar-spacer {
+    flex-grow: 1;
+}
+
+.size-field {
+    width: 84px;
+    margin-right: 8px;
+}
+
+.button,
+.tool-button {
+    height: 26px;
+    margin-left: 4px;
+    margin-right: 4px;
+    border-radius: 3px;
+}
+
+.button.primary {
+    background-color: #2f6fb8;
+    color: #ffffff;
+}
+
+.button.secondary,
+.tool-button {
+    background-color: #3a3b40;
+    color: #e0e0e0;
+}
+
+.button.danger {
+    color: #ffb0a8;
+}
+
+.tool-button.selected {
+    background-color: #5b6574;
+    border-bottom-width: 2px;
+    border-bottom-color: #7db8ff;
+}
+
+.button:disabled,
+.tool-button:disabled {
+    opacity: 0.45;
+}
+
+.board-preview-root {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.board-grid {
+    flex-direction: column;
+    background-color: #1b1c1f;
+    padding: 8px;
+    border-width: 1px;
+    border-color: #383a40;
+}
+
+.board-row {
+    flex-direction: row;
+}
+
+.board-cell {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    margin: 2px;
+    background-color: #303238;
+    border-width: 1px;
+    border-color: #484a51;
+    border-radius: 3px;
+    align-items: center;
+    justify-content: center;
+}
+
+.board-cell.active {
+    background-color: #454850;
+}
+
+.board-cell.blocked {
+    background-color: #191a1d;
+    border-color: #292a2e;
+}
+
+.board-cell.hovered {
+    border-color: #8aaee8;
+}
+
+.board-cell.selected {
+    border-width: 2px;
+    border-color: #ffffff;
+}
+
+.board-cell.error {
+    border-color: #ff6b5f;
+}
+
+.yarn-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    border-width: 1px;
+    border-color: #101010;
+}
+
+.yarn-dot.child {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    opacity: 0.82;
+}
+
+.status-bar {
+    height: 28px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-top-width: 1px;
+    border-top-color: #17181a;
+    background-color: #2d2e33;
+}
+
+.status-text {
+    margin-right: 16px;
+}
+
+.status-text.ok {
+    color: #98d37f;
+}
+
+.status-text.error {
+    color: #ff8d82;
+}
+
+.subtle {
+    color: #a5a5a5;
+}
+
+.validation-panel {
+    margin-bottom: 12px;
+}
+
+.validation-item {
+    color: #ff9b91;
+    white-space: normal;
+    margin-bottom: 4px;
+}
+
+.inspector-content {
+    flex-grow: 1;
+}
+
+.section {
+    margin-bottom: 16px;
+}
+
+.section-title {
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.empty-state {
+    color: #a9a9a9;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.color-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: #111111;
+}
+
+.color-swatch.selected {
+    border-width: 2px;
+    border-color: #ffffff;
+}

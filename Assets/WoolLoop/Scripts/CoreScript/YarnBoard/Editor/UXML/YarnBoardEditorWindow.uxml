@@ -1,0 +1,50 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement class="yarn-editor-root">
+        <ui:VisualElement class="panel nav-panel">
+            <ui:Label text="Yarn Levels" class="panel-title" />
+            <ui:TextField name="levelSearch" class="search-field" />
+            <ui:ListView name="levelList" class="level-list" />
+            <ui:VisualElement class="panel-footer">
+                <ui:Button name="newLevelButton" text="+ New Level" class="button primary" />
+                <ui:Button name="duplicateLevelButton" text="Duplicate" class="button secondary" />
+                <ui:Button name="deleteLevelButton" text="Delete" class="button secondary danger" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement class="workspace-panel">
+            <ui:VisualElement class="toolbar">
+                <ui:VisualElement class="toolbar-group">
+                    <ui:IntegerField name="rowsField" label="Rows" class="size-field" />
+                    <ui:IntegerField name="columnsField" label="Columns" class="size-field" />
+                </ui:VisualElement>
+                <ui:VisualElement class="toolbar-group tool-group">
+                    <ui:Button name="selectTool" text="Select" class="tool-button selected" />
+                    <ui:Button name="paintTool" text="Paint" class="tool-button" />
+                    <ui:Button name="eraseTool" text="Erase" class="tool-button" />
+                    <ui:Button name="yarnTool" text="Yarn Ball" class="tool-button" />
+                </ui:VisualElement>
+                <ui:VisualElement class="toolbar-spacer" />
+                <ui:Button name="loadButton" text="Load JSON" class="button secondary" />
+                <ui:Button name="saveAsButton" text="Save As" class="button secondary" />
+                <ui:Button name="saveButton" text="Save JSON" class="button primary" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="boardPreviewRoot" class="board-preview-root">
+                <ui:Label name="emptyWorkspaceLabel" text="Select or create a level" class="empty-state" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="status-bar">
+                <ui:Label name="validationStatus" class="status-text" />
+                <ui:Label name="cellSummary" class="status-text" />
+                <ui:Label name="yarnSummary" class="status-text" />
+                <ui:Label name="hoverCellLabel" class="status-text subtle" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement class="panel inspector-panel">
+            <ui:Label text="Inspector" class="panel-title" />
+            <ui:VisualElement name="validationPanel" class="validation-panel" />
+            <ui:VisualElement name="inspectorContent" class="inspector-content" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
