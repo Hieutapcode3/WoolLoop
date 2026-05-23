@@ -2,7 +2,7 @@
   "mcpServers": {
     "ai-game-developer": {
       "headers": {
-        "Authorization": "Bearer AGSfcj1nj3qkJehOKE4dZ_aaM09V3cmDGHQAVe2I8js"
+        "Authorization": "Bearer ${GAME_DEV_AUTH_TOKEN}"
       },
       "type": "http",
       "url": "https://ai-game.dev/mcp"
