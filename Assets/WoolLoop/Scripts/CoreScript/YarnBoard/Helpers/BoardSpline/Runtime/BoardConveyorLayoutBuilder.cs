@@ -258,5 +258,10 @@ namespace BoardSpline.Runtime
             }
 #endif
         }
+
+        private void OnDrawGizmos()
+        {
+
+        }
     }
 }
