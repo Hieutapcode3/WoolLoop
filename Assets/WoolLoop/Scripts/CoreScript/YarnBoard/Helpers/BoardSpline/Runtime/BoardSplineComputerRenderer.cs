@@ -35,15 +35,86 @@ namespace BoardSpline.Runtime
             var controlPoints = CreateControlPoints(borderPoints, settings);
             if (controlPoints.Length == 0) return;
 
+            splineComputer.type = Spline.Type.Linear;
             splineComputer.SetPoints(controlPoints);
             splineComputer.Close();
 
             if (splineMesh == null) return;
 
             splineMesh.spline = splineComputer;
-            var channel = splineMesh.GetChannel(0);
+            var channel = GetOrCreateChannel(splineMesh, settings);
+            channel.type = SplineMesh.Channel.Type.Extrude;
             channel.count = Mathf.Max(0, controlPoints.Length - 1);
-            channel.GetMesh(0).removeInnerFaces = settings.removeInnerFaces;
+            channel.autoCount = false;
+            channel.spacing = 0.0;
+
+            var meshDefinition = channel.GetMesh(0);
+            meshDefinition.removeInnerFaces = settings.removeInnerFaces;
+            meshDefinition.doubleSided = false;
+
+            splineMesh.RebuildImmediate();
+        }
+
+        private static SplineMesh.Channel GetOrCreateChannel(SplineMesh splineMesh, BoardSplineSettings settings)
+        {
+            var channel = splineMesh.GetChannelCount() > 0
+                ? splineMesh.GetChannel(0)
+                : splineMesh.AddChannel("Board Wall");
+
+            if (channel.GetMeshCount() == 0)
+            {
+                channel.AddMesh(CreateWallSegmentMesh(settings));
+            }
+
+            return channel;
+        }
+
+        private static Mesh CreateWallSegmentMesh(BoardSplineSettings settings)
+        {
+            var width = Mathf.Max(0.001f, settings.borderWidth);
+            var height = Mathf.Max(0.001f, settings.wallHeight) / width;
+            var mesh = new Mesh
+            {
+                name = "Board Wall Segment"
+            };
+
+            mesh.vertices = new[]
+            {
+                new Vector3(-0.5f, -height * 0.5f, -0.5f),
+                new Vector3(0.5f, -height * 0.5f, -0.5f),
+                new Vector3(0.5f, height * 0.5f, -0.5f),
+                new Vector3(-0.5f, height * 0.5f, -0.5f),
+                new Vector3(-0.5f, -height * 0.5f, 0.5f),
+                new Vector3(0.5f, -height * 0.5f, 0.5f),
+                new Vector3(0.5f, height * 0.5f, 0.5f),
+                new Vector3(-0.5f, height * 0.5f, 0.5f),
+            };
+
+            mesh.triangles = new[]
+            {
+                0, 2, 1, 0, 3, 2,
+                4, 5, 6, 4, 6, 7,
+                0, 1, 5, 0, 5, 4,
+                3, 7, 6, 3, 6, 2,
+                1, 2, 6, 1, 6, 5,
+                0, 4, 7, 0, 7, 3,
+            };
+
+            mesh.uv = new[]
+            {
+                new Vector2(0f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(1f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(1f, 1f),
+                new Vector2(0f, 1f),
+            };
+
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         public static SplinePoint[] CreateControlPoints(
@@ -54,7 +125,7 @@ namespace BoardSpline.Runtime
             if (borderPoints == null || borderPoints.Count == 0) return new SplinePoint[0];
 
             var rawPoints = new Vector3[borderPoints.Count];
-            var borderOffset = GetNormal(settings) * settings.borderWidth * 0.5f;
+            var borderOffset = GetNormal(settings) * settings.wallHeight * 0.5f;
 
             for (var i = 0; i < borderPoints.Count; i++)
             {

@@ -7,3 +7,6 @@ url = "https://ai-game.dev/mcp"
 
 [mcp_servers.ai-game-developer.tools.assets-refresh]
 approval_mode = "approve"
+
+[mcp_servers.ai-game-developer.tools.script-execute]
+approval_mode = "approve"

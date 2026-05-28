@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: PrefabProfile
   m_EditorClassIdentifier: 
   cellPrefab: {fileID: 3782661219922041137, guid: 99c24410df88baf42b8ea117fcba56a8, type: 3}
+  wallMaterial: {fileID: 2100000, guid: b03b41fcefe87504aac028916ad6685a, type: 2}

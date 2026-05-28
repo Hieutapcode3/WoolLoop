@@ -30,7 +30,7 @@ namespace Dreamteck.Splines.Editor
             {
                 for (int j = 0; j < rend.sharedMaterials.Length; j++)
                 {
-                    if(meshRend.sharedMaterials[i] == rend.sharedMaterials[j])
+                    if (meshRend.sharedMaterials[i] == rend.sharedMaterials[j])
                     {
                         found = true;
                         break;
@@ -39,15 +39,16 @@ namespace Dreamteck.Splines.Editor
             }
             if (!found)
             {
-                if(EditorUtility.DisplayDialog("New Materials", "The added object has one or more materials which are not refrenced by the renderer. Would you like to add them?", "Yes", "No")) {
-                    if(rend.sharedMaterial == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat"))
+                if (EditorUtility.DisplayDialog("New Materials", "The added object has one or more materials which are not refrenced by the renderer. Would you like to add them?", "Yes", "No"))
+                {
+                    if (rend.sharedMaterial == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat"))
                     {
                         if (EditorUtility.DisplayDialog("Replace Material", "The renderer is using the default material. Replace it?", "Yes", "No")) rend.sharedMaterials = new Material[0];
                     }
                     for (int i = 0; i < meshRend.sharedMaterials.Length; i++) AddMaterial(rend, meshRend.sharedMaterials[i]);
                 }
             }
-            
+
             return returnMesh;
         }
 
@@ -88,7 +89,7 @@ namespace Dreamteck.Splines.Editor
         void OnMoveChannelUp(object index)
         {
             SplineMesh extruder = (SplineMesh)target;
-            extruder.SwapChannels((int)index, ((int)index)-1);
+            extruder.SwapChannels((int)index, ((int)index) - 1);
             Repaint();
         }
 
@@ -239,11 +240,11 @@ namespace Dreamteck.Splines.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Geometry", EditorStyles.boldLabel);
 
-            if(channel.type != SplineMesh.Channel.Type.Place) channel.spacing = EditorGUILayout.Slider("Spacing", (float)channel.spacing, 0f, 1f);
+            if (channel.type != SplineMesh.Channel.Type.Place) channel.spacing = EditorGUILayout.Slider("Spacing", (float)channel.spacing, 0f, 1f);
 
             //Offset
             channel.minOffset = EditorGUILayout.Vector2Field(channel.randomOffset ? "Offset Min" : "Offset", channel.minOffset);
-            if(channel.randomOffset) channel.maxOffset = EditorGUILayout.Vector2Field("Offset Max", channel.maxOffset);
+            if (channel.randomOffset) channel.maxOffset = EditorGUILayout.Vector2Field("Offset Max", channel.maxOffset);
             EditorGUILayout.BeginHorizontal();
             EditorGUIUtility.labelWidth = 130f;
             channel.randomOffset = EditorGUILayout.Toggle("Randomize Offset", channel.randomOffset);
@@ -325,17 +326,17 @@ namespace Dreamteck.Splines.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Override", EditorStyles.boldLabel);
             channel.overrideNormal = EditorGUILayout.Toggle("Normal", channel.overrideNormal);
-            if(channel.overrideNormal) channel.customNormal = EditorGUILayout.Vector3Field("Normal", channel.customNormal);
+            if (channel.overrideNormal) channel.customNormal = EditorGUILayout.Vector3Field("Normal", channel.customNormal);
 
             if (channel.type == SplineMesh.Channel.Type.Extrude)
             {
                 channel.overrideUVs = (SplineMesh.Channel.UVOverride)EditorGUILayout.EnumPopup("UVs", channel.overrideUVs);
-                if(channel.overrideUVs != SplineMesh.Channel.UVOverride.None)
+                if (channel.overrideUVs != SplineMesh.Channel.UVOverride.None)
                 {
 
                 }
             }
-            
+
             channel.overrideMaterialID = EditorGUILayout.Toggle("Material IDs", channel.overrideMaterialID);
             if (channel.overrideMaterialID) channel.targetMaterialID = EditorGUILayout.IntField("Target ID", channel.targetMaterialID);
 
@@ -382,18 +383,19 @@ namespace Dreamteck.Splines.Editor
             SplineMesh.Channel.MeshDefinition definition = channel.GetMesh(index);
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(15);
-            if(definition.mesh == null) GUILayout.Box("NULL", EditorStyles.helpBox, GUILayout.MinWidth(200));
+            if (definition.mesh == null) GUILayout.Box("NULL", EditorStyles.helpBox, GUILayout.MinWidth(200));
             else GUILayout.Box(definition.mesh.name, EditorStyles.helpBox, GUILayout.MinWidth(200));
             EditorGUILayout.EndHorizontal();
             Rect rect = GUILayoutUtility.GetLastRect();
-            if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition)){
-                if(Event.current.button == 0)
+            if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
+            {
+                if (Event.current.button == 0)
                 {
                     definitionWindow = EditorWindow.GetWindow<MeshDefinitionWindow>(true);
                     definitionWindow.Init((SplineMesh)target, definition);
-                }   
+                }
 
-                if(Event.current.button == 1)
+                if (Event.current.button == 1)
                 {
                     GenericMenu menu = new GenericMenu();
                     menu.AddItem(new GUIContent("Duplicate"), false, OnDuplicateMesh, new MeshLink(index, channel));
@@ -435,7 +437,7 @@ namespace Dreamteck.Splines.Editor
                 minSize = new Vector2(482, 180);
                 extrude = e;
                 definition = d;
-                if(definition.mesh != null) titleContent = new GUIContent("Configure " + definition.mesh.name);
+                if (definition.mesh != null) titleContent = new GUIContent("Configure " + definition.mesh.name);
                 else titleContent = new GUIContent("Configure Mesh");
             }
 

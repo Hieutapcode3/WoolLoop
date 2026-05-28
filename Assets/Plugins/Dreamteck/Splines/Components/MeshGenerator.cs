@@ -20,7 +20,8 @@ namespace Dreamteck.Splines
                 {
                     _size = value;
                     Rebuild();
-                } else _size = value;
+                }
+                else _size = value;
             }
         }
 
@@ -325,13 +326,13 @@ namespace Dreamteck.Splines
             }
             filter.sharedMesh = _bakedMesh;
             _mesh = null;
-            gameObject.isStatic = makeStatic; 
+            gameObject.isStatic = makeStatic;
             _baked = true;
         }
 
         public void Unbake()
         {
-            gameObject.isStatic = false; 
+            gameObject.isStatic = false;
             _baked = false;
             DestroyImmediate(_bakedMesh);
             _bakedMesh = null;
@@ -406,8 +407,8 @@ namespace Dreamteck.Splines
             base.OnDestroy();
             MeshFilter filter = GetComponent<MeshFilter>();
             MeshRenderer rend = GetComponent<MeshRenderer>();
-            if (filter != null)  filter.hideFlags = HideFlags.None;
-            if (rend != null)  rend.hideFlags = HideFlags.None;
+            if (filter != null) filter.hideFlags = HideFlags.None;
+            if (rend != null) rend.hideFlags = HideFlags.None;
         }
 
 
@@ -447,7 +448,8 @@ namespace Dreamteck.Splines
             if (sampleCount > 1)
             {
                 BuildMesh();
-            } else
+            }
+            else
             {
                 ClearMesh();
             }
@@ -470,7 +472,7 @@ namespace Dreamteck.Splines
             //Logic for mesh generation, automatically called in the Build method
         }
 
-        protected virtual void WriteMesh() 
+        protected virtual void WriteMesh()
         {
             MeshUtility.TransformMesh(_tsMesh, trs.worldToLocalMatrix);
             if (_doubleSided)
@@ -515,11 +517,11 @@ namespace Dreamteck.Splines
 
         protected virtual void AllocateMesh(int vertexCount, int trisCount)
         {
-            if(trisCount < 0)
+            if (trisCount < 0)
             {
                 trisCount = 0;
             }
-            if(vertexCount < 0)
+            if (vertexCount < 0)
             {
                 vertexCount = 0;
             }
@@ -566,8 +568,8 @@ namespace Dreamteck.Splines
             __uvs.x = u * _uvScale.x - _uvOffset.x;
             switch (uvMode)
             {
-                case UVMode.Clip:  __uvs.y = CalculateUVClip(percent); break;
-                case UVMode.Clamp: __uvs.y = CalculateUVClamp(percent);  break;
+                case UVMode.Clip: __uvs.y = CalculateUVClip(percent); break;
+                case UVMode.Clamp: __uvs.y = CalculateUVClamp(percent); break;
                 case UVMode.UniformClamp: __uvs.y = CalculateUVUniformClamp(_vDist); break;
                 default: __uvs.y = CalculateUVUniformClip(_vDist); break;
             }
@@ -595,7 +597,7 @@ namespace Dreamteck.Splines
 
         protected float GetBaseSize(SplineSample sample)
         {
-            return _useSplineSize? sample.size: 1f;
+            return _useSplineSize ? sample.size : 1f;
         }
 
         protected Color GetBaseColor(SplineSample sample)
@@ -621,7 +623,7 @@ namespace Dreamteck.Splines
             if (!Application.isPlaying)
             {
                 DestroyImmediate(_mesh);
-            } 
+            }
             else
             {
                 Destroy(_mesh);
@@ -633,5 +635,5 @@ namespace Dreamteck.Splines
         }
     }
 
-  
+
 }

@@ -9,5 +9,8 @@ public class PrefabProfile : ScriptableObject
 
     [SerializeField] private GameObject cellPrefab;
     public static GameObject CellPrefab => asset.Value.cellPrefab;
+
+    [SerializeField] private Material wallMaterial;
+    public static Material WallMaterial => asset.Value.wallMaterial;
 }
 

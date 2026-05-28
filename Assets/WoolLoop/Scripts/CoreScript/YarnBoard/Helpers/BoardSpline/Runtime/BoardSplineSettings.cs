@@ -6,6 +6,7 @@ namespace BoardSpline.Runtime
     public struct BoardSplineSettings
     {
         public float borderWidth;
+        public float wallHeight;
         public float borderCornerRadius;
         public float borderPadding;
         public int borderSegmentCount;
@@ -17,6 +18,7 @@ namespace BoardSpline.Runtime
         public static BoardSplineSettings Default => new BoardSplineSettings
         {
             borderWidth = 0.5f,
+            wallHeight = 0.45f,
             borderCornerRadius = 0.25f,
             borderPadding = 0.23f,
             borderSegmentCount = 6,

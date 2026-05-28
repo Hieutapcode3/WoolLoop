@@ -24,7 +24,9 @@ public sealed class LevelData
 
     public bool IsActive(Vector2Int tile)
     {
-        int index = GridCoordinateUtility.ToIndex(tile, size.x);
-        return IsInside(tile) && IsValidTileIndex(index) && tileData[index];
+        if (!IsInside(tile)) return false;
+
+        var index = tile.y * size.x + tile.x;
+        return IsValidTileIndex(index) && tileData[index];
     }
 }
