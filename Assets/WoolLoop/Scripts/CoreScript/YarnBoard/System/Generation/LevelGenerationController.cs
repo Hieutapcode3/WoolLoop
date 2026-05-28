@@ -7,17 +7,23 @@ public sealed class LevelGenerationController : MonoBehaviour
     [SerializeField] private Transform cellRoot;
     [SerializeField] private Transform frameRoot;
     [SerializeField] private Material frameMaterial;
+    [SerializeField] private Mesh frameMesh;
     [SerializeField] private bool generateOnStart = true;
-    [SerializeField] private float frameTubeSize = 0.12f;
+    [SerializeField, Min(0f)] private float frameWallWidth = 0f;
     [SerializeField] private int frameTubeSides = 8;
     [SerializeField] private int frameSampleRate = 4;
+    [SerializeField, Min(0f)] private float frameCornerRoundness = 0.35f;
+    [SerializeField, Min(1)] private int frameCornerSegments = 6;
 
     public LevelData CurrentLevel { get; private set; }
     public SplineComputer PrimaryFrameSpline { get; private set; }
+    public float ActiveFrameWallWidth { get; private set; }
 
     private ILevelDataLoader _loader;
     private ICellSpawner _cellSpawner;
     private IFrameSplineBuilder _frameSplineBuilder;
+    private bool _hasRuntimePreviewFrameWallWidth;
+    private float _runtimePreviewFrameWallWidth;
 
     private void Awake()
     {
@@ -49,6 +55,54 @@ public sealed class LevelGenerationController : MonoBehaviour
         Transform frames = EnsureRoot(ref frameRoot, "Frame");
 
         _cellSpawner.SpawnCells(CurrentLevel, cells);
+        RebuildFrameBuilder(CurrentLevel);
+        PrimaryFrameSpline = _frameSplineBuilder.BuildFrame(CurrentLevel, frames);
+    }
+
+    public void PreviewFrameWallWidth(float wallWidth)
+    {
+        _runtimePreviewFrameWallWidth = Mathf.Max(0.01f, wallWidth);
+        _hasRuntimePreviewFrameWallWidth = true;
+
+        if (CurrentLevel == null)
+        {
+            Generate();
+            return;
+        }
+
+        RebuildFrame();
+    }
+
+    [ContextMenu("Save Frame Wall Width To Global Setting")]
+    public void SaveFrameWallWidthToGlobalSetting()
+    {
+        float wallWidth = ActiveFrameWallWidth > 0f
+            ? ActiveFrameWallWidth
+            : ResolveFrameWallWidth(CurrentLevel);
+
+        FrameGenerationGlobalSettings.SaveWallWidth(wallWidth);
+        frameWallWidth = wallWidth;
+        _runtimePreviewFrameWallWidth = wallWidth;
+        _hasRuntimePreviewFrameWallWidth = true;
+    }
+
+    [ContextMenu("Reset Saved Frame Wall Width")]
+    public void ResetSavedFrameWallWidth()
+    {
+        FrameGenerationGlobalSettings.ClearWallWidth();
+        _hasRuntimePreviewFrameWallWidth = false;
+        frameWallWidth = 0f;
+        RebuildFrame();
+    }
+
+    private void RebuildFrame()
+    {
+        if (CurrentLevel == null)
+            return;
+
+        Transform frames = EnsureRoot(ref frameRoot, "Frame");
+        ClearChildren(frames);
+        RebuildFrameBuilder(CurrentLevel);
         PrimaryFrameSpline = _frameSplineBuilder.BuildFrame(CurrentLevel, frames);
     }
 
@@ -64,7 +118,26 @@ public sealed class LevelGenerationController : MonoBehaviour
     {
         _loader ??= new LevelDataLoader();
         _cellSpawner ??= new CellSpawner(PrefabProfile.CellPrefab);
-        _frameSplineBuilder ??= new FrameSplineBuilder(frameMaterial, frameTubeSize, frameTubeSides, frameSampleRate);
+    }
+
+    private void RebuildFrameBuilder(LevelData data)
+    {
+        ActiveFrameWallWidth = ResolveFrameWallWidth(data);
+        _frameSplineBuilder = new FrameSplineBuilder(frameMaterial, ActiveFrameWallWidth, frameTubeSides, frameSampleRate, frameCornerRoundness, frameMesh, frameCornerSegments);
+    }
+
+    private float ResolveFrameWallWidth(LevelData data)
+    {
+        if (_hasRuntimePreviewFrameWallWidth)
+            return _runtimePreviewFrameWallWidth;
+
+        if (FrameGenerationGlobalSettings.TryGetWallWidth(out float savedWallWidth))
+            return savedWallWidth;
+
+        if (frameWallWidth > 0f)
+            return frameWallWidth;
+
+        return GridCoordinateUtility.GetCellPitch(data);
     }
 
     private Transform EnsureRoot(ref Transform root, string rootName)
@@ -91,5 +164,28 @@ public sealed class LevelGenerationController : MonoBehaviour
             else
                 DestroyImmediate(child.gameObject);
         }
+    }
+}
+
+internal static class FrameGenerationGlobalSettings
+{
+    private const string WallWidthKey = "WoolLoop.FrameGeneration.WallWidth";
+
+    public static bool TryGetWallWidth(out float wallWidth)
+    {
+        wallWidth = PlayerPrefs.GetFloat(WallWidthKey, 0f);
+        return wallWidth > 0f;
+    }
+
+    public static void SaveWallWidth(float wallWidth)
+    {
+        PlayerPrefs.SetFloat(WallWidthKey, Mathf.Max(0.01f, wallWidth));
+        PlayerPrefs.Save();
+    }
+
+    public static void ClearWallWidth()
+    {
+        PlayerPrefs.DeleteKey(WallWidthKey);
+        PlayerPrefs.Save();
     }
 }

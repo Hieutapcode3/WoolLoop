@@ -1,7 +1,7 @@
 {
     "levelId": "Level_001",
     "size": {
-        "x": 8,
+        "x": 7,
         "y": 7
     },
     "tileData": [
@@ -13,8 +13,6 @@
         false,
         false,
         false,
-        false,
-        true,
         true,
         true,
         true,
@@ -24,7 +22,6 @@
         false,
         true,
         true,
-        false,
         true,
         true,
         true,
@@ -34,7 +31,6 @@
         true,
         false,
         true,
-        false,
         true,
         false,
         false,
@@ -42,11 +38,9 @@
         true,
         true,
         true,
-        false,
         true,
         false,
         false,
-        true,
         true,
         true,
         true,
@@ -56,7 +50,6 @@
         false,
         false,
         false,
-        true,
         true,
         false,
         false,
@@ -65,41 +58,245 @@
     "yarnBalls": [
         {
             "BallId": 1,
-            "ColorId": 0,
+            "ColorId": 2,
             "tileId": {
                 "x": 1,
                 "y": 5
             },
-            "childrenTileIds": []
+            "childrenTileIds": [
+                {
+                    "x": 1,
+                    "y": 4
+                },
+                {
+                    "x": 1,
+                    "y": 3
+                },
+                {
+                    "x": 2,
+                    "y": 3
+                }
+            ]
         },
         {
             "BallId": 2,
-            "ColorId": 2,
+            "ColorId": 0,
             "tileId": {
-                "x": 4,
+                "x": 5,
                 "y": 5
             },
-            "childrenTileIds": []
+            "childrenTileIds": [
+                {
+                    "x": 5,
+                    "y": 4
+                },
+                {
+                    "x": 5,
+                    "y": 3
+                },
+                {
+                    "x": 4,
+                    "y": 3
+                }
+            ]
+        },
+        {
+            "BallId": 3,
+            "ColorId": 2,
+            "tileId": {
+                "x": 3,
+                "y": 2
+            },
+            "childrenTileIds": [
+                {
+                    "x": 4,
+                    "y": 2
+                },
+                {
+                    "x": 5,
+                    "y": 2
+                }
+            ]
+        },
+        {
+            "BallId": 4,
+            "ColorId": 1,
+            "tileId": {
+                "x": 5,
+                "y": 1
+            },
+            "childrenTileIds": [
+                {
+                    "x": 4,
+                    "y": 1
+                },
+                {
+                    "x": 3,
+                    "y": 1
+                }
+            ]
+        },
+        {
+            "BallId": 5,
+            "ColorId": 0,
+            "tileId": {
+                "x": 2,
+                "y": 1
+            },
+            "childrenTileIds": [
+                {
+                    "x": 2,
+                    "y": 2
+                },
+                {
+                    "x": 1,
+                    "y": 2
+                },
+                {
+                    "x": 1,
+                    "y": 1
+                }
+            ]
+        },
+        {
+            "BallId": 6,
+            "ColorId": 1,
+            "tileId": {
+                "x": 3,
+                "y": 4
+            },
+            "childrenTileIds": [
+                {
+                    "x": 2,
+                    "y": 4
+                },
+                {
+                    "x": 2,
+                    "y": 5
+                }
+            ]
         }
     ],
     "blockData": [
         {
             "BallId": 1,
-            "ColorId": 0,
+            "ColorId": 2,
             "tileId": {
                 "x": 1,
                 "y": 5
             },
-            "childrenTileIds": []
+            "childrenTileIds": [
+                {
+                    "x": 1,
+                    "y": 4
+                },
+                {
+                    "x": 1,
+                    "y": 3
+                },
+                {
+                    "x": 2,
+                    "y": 3
+                }
+            ]
         },
         {
             "BallId": 2,
-            "ColorId": 2,
+            "ColorId": 0,
             "tileId": {
-                "x": 4,
+                "x": 5,
                 "y": 5
             },
-            "childrenTileIds": []
+            "childrenTileIds": [
+                {
+                    "x": 5,
+                    "y": 4
+                },
+                {
+                    "x": 5,
+                    "y": 3
+                },
+                {
+                    "x": 4,
+                    "y": 3
+                }
+            ]
+        },
+        {
+            "BallId": 3,
+            "ColorId": 2,
+            "tileId": {
+                "x": 3,
+                "y": 2
+            },
+            "childrenTileIds": [
+                {
+                    "x": 4,
+                    "y": 2
+                },
+                {
+                    "x": 5,
+                    "y": 2
+                }
+            ]
+        },
+        {
+            "BallId": 4,
+            "ColorId": 1,
+            "tileId": {
+                "x": 5,
+                "y": 1
+            },
+            "childrenTileIds": [
+                {
+                    "x": 4,
+                    "y": 1
+                },
+                {
+                    "x": 3,
+                    "y": 1
+                }
+            ]
+        },
+        {
+            "BallId": 5,
+            "ColorId": 0,
+            "tileId": {
+                "x": 2,
+                "y": 1
+            },
+            "childrenTileIds": [
+                {
+                    "x": 2,
+                    "y": 2
+                },
+                {
+                    "x": 1,
+                    "y": 2
+                },
+                {
+                    "x": 1,
+                    "y": 1
+                }
+            ]
+        },
+        {
+            "BallId": 6,
+            "ColorId": 1,
+            "tileId": {
+                "x": 3,
+                "y": 4
+            },
+            "childrenTileIds": [
+                {
+                    "x": 2,
+                    "y": 4
+                },
+                {
+                    "x": 2,
+                    "y": 5
+                }
+            ]
         }
     ],
     "boardSetting": {

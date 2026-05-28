@@ -15,8 +15,8 @@ public partial class YarnBoardEditorWindow
 
         _rowsField.RegisterValueChangedCallback(evt => ResizeBoard(_currentLevel != null ? _currentLevel.size.x : 1, evt.newValue));
         _columnsField.RegisterValueChangedCallback(evt => ResizeBoard(evt.newValue, _currentLevel != null ? _currentLevel.size.y : 1));
-        rootVisualElement.RegisterCallback<PointerUpEvent>(_ => _isDragging = false);
-        rootVisualElement.RegisterCallback<PointerLeaveEvent>(_ => _isDragging = false);
+        rootVisualElement.RegisterCallback<PointerUpEvent>(_ => EndDrag());
+        rootVisualElement.RegisterCallback<PointerLeaveEvent>(_ => EndDrag());
     }
 
     private void SetTool(EditorToolMode tool)
@@ -114,7 +114,7 @@ public partial class YarnBoardEditorWindow
         _currentLevel.tileData[ToIndex(cell)] = active;
         if (!active)
             RemoveCellFromYarnBalls(cell);
-        MarkDirty();
+        MarkDirtyForCell(cell);
     }
 
     private void AddOrMoveYarnBall(Vector2Int cell)

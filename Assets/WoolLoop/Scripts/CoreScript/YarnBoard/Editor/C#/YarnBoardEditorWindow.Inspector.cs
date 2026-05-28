@@ -168,34 +168,101 @@ public partial class YarnBoardEditorWindow
 
         DrawColorPalette();
 
-        Button addChild = new Button(() =>
+        bool hasChildren = _selectedYarnBall.childrenTileIds != null && _selectedYarnBall.childrenTileIds.Count > 0;
+        bool canUseSelectedCell = IsInsideBoard(_selectedCell) &&
+                                  _selectedCell != _selectedYarnBall.tileId &&
+                                  IsActiveCell(_selectedCell);
+        bool isSelectedChild = hasChildren && _selectedYarnBall.childrenTileIds.Contains(_selectedCell);
+
+        Button toggleSelectedChild = new Button(() =>
         {
             if (_selectedYarnBall.childrenTileIds == null)
                 _selectedYarnBall.childrenTileIds = new System.Collections.Generic.List<Vector2Int>();
-            _selectedYarnBall.childrenTileIds.Add(_selectedCell);
+
+            if (_selectedYarnBall.childrenTileIds.Contains(_selectedCell))
+                _selectedYarnBall.childrenTileIds.Remove(_selectedCell);
+            else
+                _selectedYarnBall.childrenTileIds.Add(_selectedCell);
+
             MarkDirty();
         })
         {
-            text = "Add Selected Cell As Child"
+            text = isSelectedChild ? "Remove Selected Child" : "Add Selected Cell As Child"
         };
-        addChild.SetEnabled(IsInsideBoard(_selectedCell) && _selectedCell != _selectedYarnBall.tileId);
-        addChild.AddToClassList("button");
-        addChild.AddToClassList("secondary");
-        _inspectorContent.Add(addChild);
+        toggleSelectedChild.SetEnabled(canUseSelectedCell);
+        toggleSelectedChild.AddToClassList("button");
+        toggleSelectedChild.AddToClassList("secondary");
+        _inspectorContent.Add(toggleSelectedChild);
+
+        Button newBall = new Button(() =>
+        {
+            _selectedYarnBall = null;
+            _selectedCell = new Vector2Int(-1, -1);
+            SetTool(EditorToolMode.YarnBall);
+            RefreshAll();
+        })
+        {
+            text = "New Yarn Ball"
+        };
+        newBall.AddToClassList("button");
+        newBall.AddToClassList("primary");
+        _inspectorContent.Add(newBall);
 
         if (_selectedYarnBall.childrenTileIds != null)
         {
             for (int i = 0; i < _selectedYarnBall.childrenTileIds.Count; i++)
             {
                 int index = i;
-                Vector2IntField child = new Vector2IntField($"Child {i + 1}");
-                child.value = _selectedYarnBall.childrenTileIds[i];
-                child.RegisterValueChangedCallback(evt =>
+                VisualElement row = new VisualElement();
+                row.AddToClassList("child-row");
+
+                VisualElement header = new VisualElement();
+                header.AddToClassList("child-header");
+
+                Label childLabel = new Label($"Child {i + 1}");
+                childLabel.AddToClassList("child-label");
+                header.Add(childLabel);
+
+                Button removeChild = new Button(() =>
                 {
-                    _selectedYarnBall.childrenTileIds[index] = evt.newValue;
+                    _selectedYarnBall.childrenTileIds.RemoveAt(index);
+                    MarkDirty();
+                })
+                {
+                    text = "X"
+                };
+                removeChild.AddToClassList("button");
+                removeChild.AddToClassList("icon-button");
+                header.Add(removeChild);
+                row.Add(header);
+
+                VisualElement inputRow = new VisualElement();
+                inputRow.AddToClassList("child-input-row");
+
+                IntegerField childX = new IntegerField("X");
+                childX.AddToClassList("child-input");
+                childX.value = _selectedYarnBall.childrenTileIds[i].x;
+                childX.RegisterValueChangedCallback(evt =>
+                {
+                    Vector2Int current = _selectedYarnBall.childrenTileIds[index];
+                    _selectedYarnBall.childrenTileIds[index] = new Vector2Int(evt.newValue, current.y);
                     MarkDirty();
                 });
-                _inspectorContent.Add(child);
+                inputRow.Add(childX);
+
+                IntegerField childY = new IntegerField("Y");
+                childY.AddToClassList("child-input");
+                childY.value = _selectedYarnBall.childrenTileIds[i].y;
+                childY.RegisterValueChangedCallback(evt =>
+                {
+                    Vector2Int current = _selectedYarnBall.childrenTileIds[index];
+                    _selectedYarnBall.childrenTileIds[index] = new Vector2Int(current.x, evt.newValue);
+                    MarkDirty();
+                });
+                inputRow.Add(childY);
+                row.Add(inputRow);
+
+                _inspectorContent.Add(row);
             }
         }
 
