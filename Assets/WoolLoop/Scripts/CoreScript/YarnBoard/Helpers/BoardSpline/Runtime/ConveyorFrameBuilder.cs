@@ -4,6 +4,10 @@ using NgoUyenNguyen.Line;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace BoardSpline.Runtime
 {
     [ExecuteAlways]
@@ -21,35 +25,61 @@ namespace BoardSpline.Runtime
         private const string DefaultCrossSectionPath = "Assets/WoolLoop/Models/map_test.fbx";
 #endif
 
-        [TitleGroup("Input")]
+        [TitleGroup("Path")]
         [SerializeField] private Vector3[] centerPaths = new Vector3[0];
 
-        [TitleGroup("Input")]
+        [TitleGroup("Path")]
         [SerializeField, Min(0f)] private float cornerRadius = 0.25f;
 
-        [TitleGroup("Input")]
+        [TitleGroup("Path")]
         [SerializeField, Min(1)] private int cornerSegments = 6;
 
-        [TitleGroup("Input")]
+        [TitleGroup("Path")]
         [SerializeField] private bool closed;
 
-        [TitleGroup("Input")]
+        [TitleGroup("Path")]
         [SerializeField] private Vector3 splineNormal = Vector3.up;
 
-        [TitleGroup("Mesh Settings")]
+        [TitleGroup("Mesh")]
         [SerializeField] private Mesh uShapeCrossSection;
 
-        [TitleGroup("Mesh Settings")]
+        [TitleGroup("Custom Mesh")]
         [SerializeField] private bool customMeshUseMapTestPreset = true;
 
-        [TitleGroup("Mesh Settings")]
+        [TitleGroup("Custom Mesh")]
         [SerializeField] private Vector3 customMeshRotation = DefaultMapTestMeshRotation;
 
-        [TitleGroup("Mesh Settings")]
+        [TitleGroup("Custom Mesh")]
         [SerializeField] private Vector3 customMeshOffset = Vector3.zero;
 
-        [TitleGroup("Mesh Settings")]
+        [TitleGroup("Custom Mesh")]
         [SerializeField] private Vector3 customMeshScale = Vector3.one;
+
+        [FoldoutGroup("Debug Gizmos", Expanded = false)]
+        [SerializeField] private bool showRoundedPathGizmos = true;
+
+        [FoldoutGroup("Debug Gizmos", Expanded = false)]
+        [ShowIf(nameof(showRoundedPathGizmos))]
+        [SerializeField] private Color pathColor = new Color(0.15f, 0.85f, 1f, 0.9f);
+
+        [FoldoutGroup("Debug Gizmos", Expanded = false)]
+        [SerializeField] private bool showCheckpointGizmo = true;
+
+        [FoldoutGroup("Debug Gizmos", Expanded = false)]
+        [ShowIf(nameof(showCheckpointGizmo))]
+        [SerializeField, Range(0f, 1f)] private float checkpointPercent = 0.5f;
+
+        [FoldoutGroup("Debug Gizmos", Expanded = false)]
+        [ShowIf(nameof(showCheckpointGizmo))]
+        [SerializeField] private Color checkpointColor = new Color(1f, 0.25f, 0.1f, 1f);
+
+        [FoldoutGroup("Debug Gizmos", Expanded = false)]
+        [ShowIf(nameof(showCheckpointGizmo))]
+        [SerializeField, Min(0.01f)] private float checkpointRadius = 0.12f;
+
+        [FoldoutGroup("Debug Gizmos", Expanded = false)]
+        [ShowIf(nameof(showRoundedPathGizmos))]
+        [SerializeField] private bool showDebugLabels;
 
         public Vector3[] CenterPaths
         {
@@ -127,6 +157,8 @@ namespace BoardSpline.Runtime
             cornerSegments = Mathf.Max(1, cornerSegments);
             if (splineNormal == Vector3.zero) splineNormal = Vector3.up;
             if (customMeshScale == Vector3.zero) customMeshScale = Vector3.one;
+            checkpointPercent = Mathf.Clamp01(checkpointPercent);
+            checkpointRadius = Mathf.Max(0.01f, checkpointRadius);
             TryAssignDefaultCrossSection();
         }
 
@@ -139,6 +171,76 @@ namespace BoardSpline.Runtime
         public Vector3[] GetRoundedPath()
         {
             return CreateRoundedPath(centerPaths, cornerRadius, cornerSegments, closed);
+        }
+
+        public Vector3[] GetRoundedPathWorld(float yOffset = 0.5f)
+        {
+            var localPath = GetRoundedPath();
+            var worldPath = new Vector3[localPath.Length];
+            for (var i = 0; i < localPath.Length; i++)
+                worldPath[i] = transform.TransformPoint(localPath[i]) + Vector3.up * yOffset;
+
+            return worldPath;
+        }
+
+        public static float CalculateLength(IReadOnlyList<Vector3> path, bool closed)
+        {
+            var count = path?.Count ?? 0;
+            if (count < 2) return 0f;
+
+            var length = 0f;
+            var segmentCount = closed ? count : count - 1;
+            for (var i = 0; i < segmentCount; i++)
+                length += Vector3.Distance(path[i], path[(i + 1) % count]);
+
+            return length;
+        }
+
+        public static Vector3 SamplePathAtDistance(IReadOnlyList<Vector3> path, float distance, bool closed)
+        {
+            var count = path?.Count ?? 0;
+            if (count == 0) return Vector3.zero;
+            if (count == 1) return path[0];
+
+            var totalLength = CalculateLength(path, closed);
+            if (totalLength <= Epsilon) return path[0];
+
+            distance = closed
+                ? Mathf.Repeat(distance, totalLength)
+                : Mathf.Clamp(distance, 0f, totalLength);
+
+            var walked = 0f;
+            var segmentCount = closed ? count : count - 1;
+            for (var i = 0; i < segmentCount; i++)
+            {
+                var start = path[i];
+                var end = path[(i + 1) % count];
+                var segmentLength = Vector3.Distance(start, end);
+                if (segmentLength <= Epsilon) continue;
+
+                if (walked + segmentLength >= distance)
+                {
+                    var t = Mathf.Clamp01((distance - walked) / segmentLength);
+                    return Vector3.Lerp(start, end, t);
+                }
+
+                walked += segmentLength;
+            }
+
+            return closed ? path[0] : path[count - 1];
+        }
+
+        public static Vector3 SamplePathAtPercent(IReadOnlyList<Vector3> path, float percent, bool closed)
+        {
+            var count = path?.Count ?? 0;
+            if (count == 0) return Vector3.zero;
+            if (count == 1) return path[0];
+
+            percent = Mathf.Clamp01(percent);
+            if (closed && percent >= 1f) return path[0];
+
+            var totalLength = CalculateLength(path, closed);
+            return SamplePathAtDistance(path, totalLength * percent, closed);
         }
 
         [Button("Build Conveyor Frame")]
@@ -171,7 +273,8 @@ namespace BoardSpline.Runtime
             }
 
             splineComputer.type = Spline.Type.Linear;
-            splineComputer.SetPoints(splinePoints);
+            splineComputer.space = SplineComputer.Space.Local;
+            splineComputer.SetPoints(splinePoints, SplineComputer.Space.Local);
             if (closed) splineComputer.Close();
             else splineComputer.Break();
 
@@ -400,6 +503,55 @@ namespace BoardSpline.Runtime
                 }
             }
 #endif
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (!showRoundedPathGizmos && !showCheckpointGizmo)
+                return;
+
+            var worldPath = GetRoundedPathWorld();
+            if (worldPath.Length == 0)
+                return;
+            var length = CalculateLength(worldPath, closed);
+            if (showRoundedPathGizmos)
+            {
+                Gizmos.color = pathColor;
+                DrawPath(worldPath, closed);
+            }
+
+            var checkpoint = Vector3.zero;
+            if (showCheckpointGizmo)
+            {
+                checkpoint = SamplePathAtPercent(worldPath, checkpointPercent, closed);
+                Gizmos.color = checkpointColor;
+                Gizmos.DrawSphere(checkpoint, checkpointRadius);
+                Gizmos.DrawWireSphere(checkpoint, checkpointRadius * 1.35f);
+            }
+
+#if UNITY_EDITOR
+            if (showDebugLabels && showRoundedPathGizmos)
+            {
+                var labelPosition = showCheckpointGizmo ? checkpoint : worldPath[0];
+                Handles.color = showCheckpointGizmo ? checkpointColor : pathColor;
+                Handles.Label(
+                    labelPosition + Vector3.up * (checkpointRadius * 2f),
+                    $"L={length:0.##} | P={checkpointPercent:0.##}"
+                );
+            }
+#endif
+        }
+
+        private static void DrawPath(IReadOnlyList<Vector3> path, bool isClosed)
+        {
+            var count = path?.Count ?? 0;
+            if (count < 2) return;
+
+            for (var i = 0; i < count - 1; i++)
+                Gizmos.DrawLine(path[i], path[i + 1]);
+
+            if (isClosed)
+                Gizmos.DrawLine(path[count - 1], path[0]);
         }
     }
 }

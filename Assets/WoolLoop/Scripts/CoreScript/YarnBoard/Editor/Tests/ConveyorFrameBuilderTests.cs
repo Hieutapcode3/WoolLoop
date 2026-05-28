@@ -133,6 +133,118 @@ public sealed class ConveyorFrameBuilderTests
     }
 
     [Test]
+    public void CalculateLength_OpenPath_UsesConsecutiveSegments()
+    {
+        var length = ConveyorFrameBuilder.CalculateLength(
+            new[]
+            {
+                Vector3.zero,
+                Vector3.forward * 2f,
+                Vector3.forward * 2f + Vector3.right * 3f
+            },
+            false
+        );
+
+        Assert.That(length, Is.EqualTo(5f).Within(0.0001f));
+    }
+
+    [Test]
+    public void CalculateLength_ClosedPath_IncludesClosingSegment()
+    {
+        var length = ConveyorFrameBuilder.CalculateLength(
+            new[]
+            {
+                Vector3.zero,
+                Vector3.forward,
+                Vector3.forward + Vector3.right,
+                Vector3.right
+            },
+            true
+        );
+
+        Assert.That(length, Is.EqualTo(4f).Within(0.0001f));
+    }
+
+    [Test]
+    public void CalculateLength_EmptyOrSinglePoint_ReturnsZero()
+    {
+        Assert.That(ConveyorFrameBuilder.CalculateLength(null, false), Is.Zero);
+        Assert.That(ConveyorFrameBuilder.CalculateLength(new Vector3[0], false), Is.Zero);
+        Assert.That(ConveyorFrameBuilder.CalculateLength(new[] { Vector3.one }, true), Is.Zero);
+    }
+
+    [Test]
+    public void SamplePathAtPercent_OpenPath_SamplesByDistance()
+    {
+        var path = new[]
+        {
+            Vector3.zero,
+            Vector3.forward * 2f,
+            Vector3.forward * 2f + Vector3.right * 2f
+        };
+
+        Assert.That(ConveyorFrameBuilder.SamplePathAtPercent(path, 0f, false), Is.EqualTo(Vector3.zero));
+        Assert.That(ConveyorFrameBuilder.SamplePathAtPercent(path, 0.5f, false), Is.EqualTo(Vector3.forward * 2f));
+        Assert.That(
+            ConveyorFrameBuilder.SamplePathAtPercent(path, 1f, false),
+            Is.EqualTo(Vector3.forward * 2f + Vector3.right * 2f)
+        );
+    }
+
+    [Test]
+    public void SamplePathAtPercent_ClosedPath_OneReturnsLoopBoundary()
+    {
+        var path = new[]
+        {
+            Vector3.zero,
+            Vector3.forward,
+            Vector3.forward + Vector3.right,
+            Vector3.right
+        };
+
+        Assert.That(ConveyorFrameBuilder.SamplePathAtPercent(path, 1f, true), Is.EqualTo(Vector3.zero));
+    }
+
+    [Test]
+    public void GetRoundedPathWorld_ConvertsLocalRoundedPathThroughTransform()
+    {
+        var builder = CreateBuilder();
+        testObject.transform.position = new Vector3(10f, 2f, -4f);
+        testObject.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+        builder.CornerRadius = 0f;
+        builder.SetPath(new[] { Vector3.zero, Vector3.forward }, false);
+
+        var local = builder.GetRoundedPath();
+        var world = builder.GetRoundedPathWorld();
+
+        Assert.That(world.Length, Is.EqualTo(local.Length));
+        for (var i = 0; i < local.Length; i++)
+            Assert.That(world[i], Is.EqualTo(testObject.transform.TransformPoint(local[i])));
+    }
+
+    [Test]
+    public void Build_WithTransformedObject_KeepsSplinePointsInBuilderLocalSpace()
+    {
+        var builder = CreateBuilder();
+        builder.UShapeCrossSection = CreateSourceMesh();
+        testObject.transform.position = new Vector3(10f, 2f, -4f);
+        testObject.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+        builder.CornerRadius = 0f;
+        builder.SetPath(new[] { Vector3.zero, Vector3.forward * 2f }, false);
+
+        Assert.That(builder.Build(), Is.True);
+
+        var spline = testObject.GetComponent<SplineComputer>();
+        var localPoints = spline.GetPoints(SplineComputer.Space.Local);
+        var roundedPath = builder.GetRoundedPath();
+
+        Assert.That(spline.space, Is.EqualTo(SplineComputer.Space.Local));
+        Assert.That(localPoints.Length, Is.EqualTo(roundedPath.Length));
+        for (var i = 0; i < roundedPath.Length; i++)
+            Assert.That(localPoints[i].position, Is.EqualTo(roundedPath[i]));
+    }
+
+    [Test]
     public void Build_MapTestCustomMeshPreset_AppliesAxisRemapRotation()
     {
         var builder = CreateBuilder();
