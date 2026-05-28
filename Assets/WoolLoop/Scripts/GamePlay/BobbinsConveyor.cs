@@ -2,11 +2,15 @@ using System;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [Serializable]
 public class BobbinsBoxSetUp
 {
     public WoolColorType boxColorType;
+    public BobbinsBoxSize boxSize = BobbinsBoxSize.Size_8;
     public int itemCount;
 }
 
@@ -16,11 +20,11 @@ public class BobbinsConveyor : MonoBehaviour
     [SerializeField] private GameObject bobbinsPrefab;
     [TitleGroup("Layout")]
     [SerializeField, Min(0.01f)] private float conveyorScale = 1f;
-    // [TitleGroup("Layout")]
     [SerializeField, Min(0.01f)] private float spacingZ = 0.15f;
-    // [TitleGroup("Layout")]
     [SerializeField, Min(1)] private int visibleCount = 4;
     [SerializeField] private Transform boxSpawnRoot;
+    [SerializeField] private Transform bottomLinePoint;
+    [SerializeField] private Transform barrierPoint;
     public int VisibleCount => visibleCount;
     [TitleGroup("Setup")]
     [TableList(ShowIndexLabels = true)]
@@ -32,6 +36,9 @@ public class BobbinsConveyor : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
+        if (PrefabUtility.IsPartOfPrefabAsset(this) || !Application.isPlaying)
+            return;
+
         RefreshLayout();
     }
 #endif
@@ -46,7 +53,6 @@ public class BobbinsConveyor : MonoBehaviour
     {
         if (_isRefreshing)
             return;
-
         if (bobbinsPrefab == null)
             return;
 
@@ -72,34 +78,28 @@ public class BobbinsConveyor : MonoBehaviour
             _allBobbins.Clear();
         }
         else
-        {
             CleanupMissingInstances();
-        }
 
         while (_allBobbins.Count > targetCount)
-        {
             RemoveInstance(_allBobbins.Count - 1);
-        }
 
         while (_allBobbins.Count < targetCount)
-        {
             CreateInstance();
-        }
 
         for (int i = 0; i < _allBobbins.Count; i++)
-        {
             UpdateInstance(i);
-        }
+
     }
 
     private void CreateInstance()
     {
+        int index = _allBobbins.Count;
         GameObject bobbins = Instantiate(bobbinsPrefab, boxSpawnRoot);
         if (bobbins.TryGetComponent(out BobbinsBox bobbinsBox))
         {
-            bobbinsBox.SetColorProperties(_spawnOrder[_allBobbins.Count].boxColorType);
+            var setup = _spawnOrder[index];
+            bobbinsBox.InitBobbinsBox(setup.boxColorType, setup.boxSize, open: index < visibleCount, bottomLine: index == 0);
         }
-
         _allBobbins.Add(bobbins);
     }
 
@@ -109,17 +109,35 @@ public class BobbinsConveyor : MonoBehaviour
         if (bobbins == null)
             return;
 
-        float localZ = index * spacingZ;
-        bobbins.transform.SetLocalPositionAndRotation(new Vector3(0f, 0f, localZ), Quaternion.identity);
+        Vector3 localPosition = CalculateLocalPosition(index);
+        bobbins.transform.SetLocalPositionAndRotation(localPosition, Quaternion.identity);
         bobbins.transform.localScale = Vector3.one * conveyorScale;
         bobbins.name = $"Bobbin_{index}_Color_{_spawnOrder[index].boxColorType}";
 
         if (bobbins.TryGetComponent(out BobbinsBox bobbinsBox))
         {
-            bobbinsBox.SetColorProperties(_spawnOrder[index].boxColorType);
+            var boxIndex = _spawnOrder[index];
+            bobbinsBox.InitBobbinsBox(boxIndex.boxColorType, boxIndex.boxSize, open: index < visibleCount, bottomLine: index == 0);
         }
 
         bobbins.SetActive(index < visibleCount);
+    }
+
+    private Vector3 CalculateLocalPosition(int index)
+    {
+        float bottomLineZ = bottomLinePoint != null ? bottomLinePoint.localPosition.z : 0f;
+        float barrierZ = barrierPoint != null ? barrierPoint.localPosition.z : bottomLineZ;
+
+        if (index <= 0)
+            return new Vector3(0f, 0f, bottomLineZ);
+
+        float startZ = barrierZ;
+        float z = startZ + (index - 1) * spacingZ;
+
+        if (z < bottomLineZ)
+            z = bottomLineZ;
+
+        return new Vector3(0f, 0f, z);
     }
 
     private void RemoveInstance(int index)
@@ -175,6 +193,7 @@ public class BobbinsConveyor : MonoBehaviour
                 _spawnOrder.Add(new BobbinsBoxSetUp
                 {
                     boxColorType = setup.boxColorType,
+                    boxSize = setup.boxSize,
                     itemCount = 1,
                 });
             }
@@ -187,9 +206,7 @@ public class BobbinsConveyor : MonoBehaviour
         RecycleAll();
         _allBobbins.Clear();
         _spawnOrder.Clear();
-        // _bottomIndex = 0;
     }
-
     private void RecycleAll()
     {
         if (boxSpawnRoot.childCount == 0)
