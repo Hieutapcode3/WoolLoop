@@ -1,49 +1,56 @@
 using System.Collections.Generic;
-using DG.Tweening;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 public class ConveyorSpot : MonoBehaviour
 {
+    [TitleGroup("References")]
     [SerializeField] private ConveyorController controller;
+
+    [TitleGroup("Movement")]
     [SerializeField] private bool rotateAlongPath = true;
     [SerializeField, Min(0.01f)] private float lookAheadDistance = 0.15f;
     [SerializeField] private Vector3 upAxis = Vector3.up;
-    [SerializeField] private Transform boneUp;
-    [SerializeField] private Transform boneDown;
-    [SerializeField, Min(0.01f)] private float boneUpScaleAmount = 1.2f;
-    [SerializeField, Min(0.01f)] private float boneDownScaleAmount = 0.8f;
-    [SerializeField, Range(0f, 180f)] private float curveAngleThreshold = 12f;
-    [SerializeField, Min(0.01f)] private float curveSampleDistance = 0.35f;
-    [SerializeField, Min(0.01f)] private float boneScaleDuration = 0.2f;
+
+    [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
+    private int spotIndex;
+
+    [ShowInInspector, ReadOnly]
+    private bool isOccupied;
+
     private float distanceAlongPath;
     private float baseDistanceAlongPath;
     private readonly List<Vector3> cachedPath = new();
     private readonly List<float> cachedCumDist = new();
     private float cachedTotalLength;
     private bool cachedSmoothLoopMode;
-    private Vector3 originalScale;
-    private Vector3 boneUpOriginalScale;
-    private Vector3 boneDownOriginalScale;
-    private bool boneOriginalScalesCached;
-    private Tween boneUpScaleTween;
-    private Tween boneDownScaleTween;
+    private YarnItem occupyingYarnItem;
 
-    public void Setup(ConveyorController conveyorController, float startDistance)
+    public bool IsOccupied
+    {
+        get
+        {
+            if (occupyingYarnItem != null)
+                return true;
+
+            occupyingYarnItem = GetComponentInChildren<YarnItem>();
+            return occupyingYarnItem != null;
+        }
+    }
+
+    public float PathDistance => distanceAlongPath;
+
+    public void Setup(ConveyorController conveyorController, float startDistance, int index)
     {
         controller = conveyorController;
+        spotIndex = index;
         baseDistanceAlongPath = Mathf.Max(0f, startDistance);
         distanceAlongPath = baseDistanceAlongPath;
-        if (originalScale == Vector3.zero)
-            originalScale = transform.localScale;
-        CacheBoneOriginalScalesIfNeeded();
         RebuildCache();
         ApplyPosition();
     }
 
-    public float GetDistanceAlongPath()
-    {
-        return distanceAlongPath;
-    }
+    public float GetDistanceAlongPath() => distanceAlongPath;
 
     public void SetDistanceAlongPath(float newDistance)
     {
@@ -56,6 +63,61 @@ public class ConveyorSpot : MonoBehaviour
     {
         RebuildCache();
         ApplyPosition();
+    }
+
+    public bool TryAttachYarnItem(YarnItem item)
+    {
+        if (item == null || occupyingYarnItem != null)
+            return false;
+
+        if (GetComponentInChildren<YarnItem>() != null && GetComponentInChildren<YarnItem>() != item)
+            return false;
+
+        occupyingYarnItem = item;
+        item.AttachToSpot(this);
+        item.transform.SetParent(transform, worldPositionStays: false);
+        item.transform.localPosition = Vector3.zero;
+        item.transform.localRotation = Quaternion.identity;
+        return true;
+    }
+
+    public void ReleaseYarnItem(YarnItem item)
+    {
+        if (occupyingYarnItem != item)
+            return;
+
+        occupyingYarnItem = null;
+    }
+
+    public bool IsOnCurve(float angleThreshold, float sampleDistance)
+    {
+        if (cachedPath.Count < 3 || cachedTotalLength <= 0.00001f)
+            return false;
+
+        float span = Mathf.Max(0.05f, sampleDistance);
+        float s = distanceAlongPath;
+
+        if (GetTurnAngleAtDistance(s, span) > angleThreshold)
+            return true;
+
+        float wideSpan = Mathf.Min(span * 3f, cachedTotalLength * 0.25f);
+        return GetTurnAngleAtDistance(s, wideSpan) > angleThreshold;
+    }
+
+    private float GetTurnAngleAtDistance(float pathDistance, float halfWindow)
+    {
+        float dPrev = GetOffsetPathDistance(pathDistance - halfWindow);
+        float dNext = GetOffsetPathDistance(pathDistance + halfWindow);
+        Vector3 pPrev = SampleAtDistance(dPrev);
+        Vector3 pCur = SampleAtDistance(pathDistance);
+        Vector3 pNext = SampleAtDistance(dNext);
+
+        Vector3 inDir = pCur - pPrev;
+        Vector3 outDir = pNext - pCur;
+        if (inDir.sqrMagnitude <= 0.000001f || outDir.sqrMagnitude <= 0.000001f)
+            return 0f;
+
+        return Vector3.Angle(inDir, outDir);
     }
 
     private void FixedUpdate()
@@ -80,35 +142,8 @@ public class ConveyorSpot : MonoBehaviour
             distanceAlongPath = Mathf.Repeat(distanceAlongPath, cachedTotalLength);
 
         ApplyPosition();
+        isOccupied = IsOccupied;
     }
-
-    private void OnDisable()
-    {
-        boneUpScaleTween?.Kill();
-        boneUpScaleTween = null;
-        boneDownScaleTween?.Kill();
-        boneDownScaleTween = null;
-    }
-
-    private void CacheBoneOriginalScalesIfNeeded()
-    {
-        if (boneOriginalScalesCached)
-            return;
-        if (boneUp != null)
-            boneUpOriginalScale = boneUp.localScale;
-        if (boneDown != null)
-            boneDownOriginalScale = boneDown.localScale;
-        if (boneUp != null && boneDown != null)
-            boneOriginalScalesCached = true;
-    }
-
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        boneOriginalScalesCached = false;
-        CacheBoneOriginalScalesIfNeeded();
-    }
-#endif
 
     private void RebuildCache()
     {
@@ -143,7 +178,6 @@ public class ConveyorSpot : MonoBehaviour
         Vector3 posOnPath = SampleAtDistance(distanceAlongPath);
         transform.position = posOnPath + controller.GetSpotOffset();
         ApplyRotation(posOnPath);
-        ApplyBoneScaling();
     }
 
     private void ApplyRotation(Vector3 currentPathPosition)
@@ -187,57 +221,10 @@ public class ConveyorSpot : MonoBehaviour
         return Vector3.Lerp(cachedPath[startIndex], cachedPath[endIndex], t);
     }
 
-    private void ApplyBoneScaling()
-    {
-        CacheBoneOriginalScalesIfNeeded();
-        if (boneUp == null || boneDown == null || cachedPath.Count < 3)
-            return;
-
-        float span = Mathf.Max(0.01f, curveSampleDistance);
-        float s = distanceAlongPath;
-        Vector3 tangentA = GetForwardTangentAt(s, span);
-        Vector3 tangentB = GetForwardTangentAt(GetOffsetPathDistance(s + span), span);
-        float angle = Vector3.Angle(tangentA, tangentB);
-        bool isOnCurve = angle > curveAngleThreshold;
-
-        if (isOnCurve)
-        {
-            ScaleBoneX(boneUp, boneUpScaleAmount, ref boneUpScaleTween);
-            ScaleBoneX(boneDown, boneDownScaleAmount, ref boneDownScaleTween);
-        }
-        else
-        {
-            ScaleBoneX(boneUp, boneUpOriginalScale.x, ref boneUpScaleTween);
-            ScaleBoneX(boneDown, boneDownOriginalScale.x, ref boneDownScaleTween);
-        }
-    }
-
     private float GetOffsetPathDistance(float distance)
     {
         if (controller != null && controller.UseSmoothLoopMoveToStart())
             return Mathf.Repeat(distance, cachedTotalLength);
         return Mathf.Clamp(distance, 0f, cachedTotalLength);
-    }
-
-    private Vector3 GetForwardTangentAt(float atDistance, float halfSpan)
-    {
-        float d0 = GetOffsetPathDistance(atDistance - halfSpan);
-        float d1 = GetOffsetPathDistance(atDistance + halfSpan);
-        Vector3 p0 = SampleAtDistance(d0);
-        Vector3 p1 = SampleAtDistance(d1);
-        Vector3 t = p1 - p0;
-        return t.sqrMagnitude > 0.000001f ? t.normalized : transform.forward;
-    }
-
-    private void ScaleBoneX(Transform bone, float targetScaleX, ref Tween slot)
-    {
-        if (bone == null)
-            return;
-
-        if (Mathf.Approximately(bone.localScale.x, targetScaleX))
-            return;
-
-        slot?.Kill();
-        slot = bone.DOScaleX(targetScaleX, boneScaleDuration);
     }
 }

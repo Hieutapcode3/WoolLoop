@@ -76,6 +76,93 @@ public partial class ConveyorController : MonoBehaviour
         return listSpot[index];
     }
 
+    public int GetNearestSpotIndex(Vector3 worldPosition) => FindNearestSpotIndex(worldPosition);
+
+    public int GetSlotOffsetBetween(int fromIndex, int toIndex) =>
+        GetSlotOffset(fromIndex, toIndex, listSpot != null ? listSpot.Count : 0, UseSmoothLoopMoveToStart());
+
+    public int GetSpotTransformCount() => listSpot != null ? listSpot.Count : 0;
+
+    public bool TryGetSpotAtIndex(int index, out Transform spotTransform, out ConveyorSpot conveyorSpot)
+    {
+        spotTransform = null;
+        conveyorSpot = null;
+        if (listSpot == null || index < 0 || index >= listSpot.Count)
+            return false;
+
+        spotTransform = listSpot[index];
+        if (spotTransform == null)
+            return false;
+
+        return spotTransform.TryGetComponent(out conveyorSpot);
+    }
+
+    public bool TryFindNearestEmptySpotBySlot(Vector3 worldPosition, int maxSlotDistance, out ConveyorSpot spot)
+    {
+        spot = null;
+        if (listSpot == null || listSpot.Count == 0)
+            return false;
+
+        int entranceSlotIndex = FindNearestSpotIndex(worldPosition);
+        if (entranceSlotIndex < 0)
+            return false;
+
+        int searchRange = Mathf.Max(0, maxSlotDistance);
+        bool loop = UseSmoothLoopMoveToStart();
+        int bestSlotOffset = int.MaxValue;
+
+        for (int i = 0; i < listSpot.Count; i++)
+        {
+            Transform spotTransform = listSpot[i];
+            if (spotTransform == null || !spotTransform.TryGetComponent(out ConveyorSpot conveyorSpot))
+                continue;
+
+            if (conveyorSpot.IsOccupied)
+                continue;
+
+            int slotOffset = GetSlotOffset(entranceSlotIndex, i, listSpot.Count, loop);
+            if (slotOffset > searchRange || slotOffset >= bestSlotOffset)
+                continue;
+
+            bestSlotOffset = slotOffset;
+            spot = conveyorSpot;
+        }
+
+        return spot != null;
+    }
+
+    private int FindNearestSpotIndex(Vector3 worldPosition)
+    {
+        if (listSpot == null || listSpot.Count == 0)
+            return -1;
+
+        int bestIndex = -1;
+        float bestSqr = float.MaxValue;
+        for (int i = 0; i < listSpot.Count; i++)
+        {
+            Transform spotTransform = listSpot[i];
+            if (spotTransform == null)
+                continue;
+
+            float sqr = (spotTransform.position - worldPosition).sqrMagnitude;
+            if (sqr >= bestSqr)
+                continue;
+
+            bestSqr = sqr;
+            bestIndex = i;
+        }
+
+        return bestIndex;
+    }
+
+    private static int GetSlotOffset(int fromIndex, int toIndex, int count, bool loop)
+    {
+        int diff = Mathf.Abs(toIndex - fromIndex);
+        if (!loop || count <= 1)
+            return diff;
+        return Mathf.Min(diff, count - diff);
+    }
+
     private void RefreshPoints()
     {
         points.Clear();
@@ -211,7 +298,7 @@ public partial class ConveyorController : MonoBehaviour
             t.position = spots[i];
             if (!t.TryGetComponent(out ConveyorSpot conveyorSpot))
                 conveyorSpot = t.gameObject.AddComponent<ConveyorSpot>();
-            conveyorSpot.Setup(this, listSpotDistances[i]);
+            conveyorSpot.Setup(this, listSpotDistances[i], i);
         }
     }
 
