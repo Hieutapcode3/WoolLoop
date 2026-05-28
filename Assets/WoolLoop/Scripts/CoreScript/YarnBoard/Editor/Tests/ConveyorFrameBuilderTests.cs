@@ -22,6 +22,7 @@ public sealed class ConveyorFrameBuilderTests
     {
         var builder = CreateBuilder();
         var sourceMesh = CreateSourceMesh();
+        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.CustomMesh;
         builder.UShapeCrossSection = sourceMesh;
         builder.SetPath(
             new[]
@@ -40,16 +41,20 @@ public sealed class ConveyorFrameBuilderTests
         var splineMesh = testObject.GetComponent<SplineMesh>();
         Assert.That(splineComputer.type, Is.EqualTo(Spline.Type.Linear));
         Assert.That(splineComputer.isClosed, Is.False);
-        Assert.That(splineComputer.GetPoints().All(point => point.normal == Vector3.up), Is.True);
+        Assert.That(splineComputer.GetPoints().All(point => Vector3.Dot(point.normal, Vector3.up) > 0.99f), Is.True);
         Assert.That(splineMesh.GetChannelCount(), Is.EqualTo(1));
 
         var channel = splineMesh.GetChannel(0);
         Assert.That(channel.type, Is.EqualTo(SplineMesh.Channel.Type.Extrude));
         Assert.That(channel.count, Is.EqualTo(1));
         Assert.That(channel.autoCount, Is.False);
-        Assert.That(channel.overrideNormal, Is.True);
+        Assert.That(channel.overrideNormal, Is.False);
         Assert.That(channel.customNormal, Is.EqualTo(Vector3.up));
-        Assert.That(channel.GetMesh(0).mesh, Is.SameAs(sourceMesh));
+        var meshDefinition = channel.GetMesh(0);
+        Assert.That(meshDefinition.mesh, Is.SameAs(sourceMesh));
+        Assert.That(meshDefinition.rotation, Is.EqualTo(new Vector3(0f, 90f, 0f)));
+        Assert.That(meshDefinition.offset, Is.EqualTo(Vector3.zero));
+        Assert.That(meshDefinition.scale, Is.EqualTo(Vector3.one));
         Assert.That(testObject.GetComponent<MeshFilter>().sharedMesh.vertexCount, Is.GreaterThan(0));
     }
 
@@ -57,6 +62,7 @@ public sealed class ConveyorFrameBuilderTests
     public void Build_ClosedPath_ClosesSpline()
     {
         var builder = CreateBuilder();
+        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.CustomMesh;
         builder.UShapeCrossSection = CreateSourceMesh();
         builder.SetPath(
             new[]
@@ -71,6 +77,40 @@ public sealed class ConveyorFrameBuilderTests
 
         Assert.That(builder.Build(), Is.True);
         Assert.That(testObject.GetComponent<SplineComputer>().isClosed, Is.True);
+    }
+
+    [Test]
+    public void Build_Stable3DPath_KeepsNormalsPerpendicularToVerticalSegment()
+    {
+        var builder = CreateBuilder();
+        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.GeneratedUShape;
+        builder.Orientation = ConveyorFrameBuilder.OrientationMode.Stable3D;
+        builder.SetPath(
+            new[]
+            {
+                Vector3.zero,
+                Vector3.forward * 5f,
+                Vector3.forward * 5f + Vector3.right * 3f,
+                Vector3.forward * 5f + Vector3.right * 3f + Vector3.up * 3f
+            },
+            false
+        );
+        builder.CornerRadius = 1f;
+        builder.CornerSegments = 6;
+
+        Assert.That(builder.Build(), Is.True);
+
+        var points = testObject.GetComponent<SplineComputer>().GetPoints();
+        Assert.That(points.Length, Is.EqualTo(16));
+        for (var i = 0; i < points.Length; i++)
+        {
+            var tangent = GetPointTangent(points, i);
+            Assert.That(Mathf.Abs(Vector3.Dot(points[i].normal.normalized, tangent)), Is.LessThan(0.001f));
+        }
+
+        var channel = testObject.GetComponent<SplineMesh>().GetChannel(0);
+        Assert.That(channel.overrideNormal, Is.False);
+        Assert.That(testObject.GetComponent<MeshFilter>().sharedMesh.vertexCount, Is.GreaterThan(0));
     }
 
     [Test]
@@ -96,7 +136,44 @@ public sealed class ConveyorFrameBuilderTests
     }
 
     [Test]
-    public void MapTest_DefaultCrossSectionMesh_IsCube()
+    public void CreateUShapeCrossSectionMesh_HasExpectedBoundsAndGeometry()
+    {
+        testMesh = ConveyorFrameBuilder.CreateUShapeCrossSectionMesh(0.6f, 0.35f, 0.08f, 0.2f);
+
+        Assert.That(testMesh, Is.Not.Null);
+        Assert.That(testMesh.vertexCount, Is.GreaterThan(0));
+        Assert.That(testMesh.triangles.Length, Is.GreaterThan(0));
+        Assert.That(testMesh.bounds.size.x, Is.EqualTo(0.6f).Within(0.001f));
+        Assert.That(testMesh.bounds.size.y, Is.EqualTo(0.35f).Within(0.001f));
+        Assert.That(testMesh.bounds.size.z, Is.EqualTo(0.2f).Within(0.001f));
+    }
+
+    [Test]
+    public void Build_MapTestCustomMeshPreset_AppliesAxisRemapRotation()
+    {
+        var builder = CreateBuilder();
+        var mesh = AssetDatabase
+            .LoadAllAssetsAtPath("Assets/WoolLoop/Models/map_test.fbx")
+            .OfType<Mesh>()
+            .FirstOrDefault(asset => asset.name == "Cube");
+        Assert.That(mesh, Is.Not.Null);
+
+        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.CustomMesh;
+        builder.CustomMeshUseMapTestPreset = true;
+        builder.UShapeCrossSection = mesh;
+        builder.SetPath(new[] { Vector3.zero, Vector3.forward }, false);
+
+        Assert.That(builder.Build(), Is.True);
+
+        var meshDefinition = testObject.GetComponent<SplineMesh>().GetChannel(0).GetMesh(0);
+        Assert.That(meshDefinition.mesh, Is.SameAs(mesh));
+        Assert.That(meshDefinition.rotation, Is.EqualTo(new Vector3(0f, 90f, 0f)));
+        Assert.That(meshDefinition.offset, Is.EqualTo(Vector3.zero));
+        Assert.That(meshDefinition.scale, Is.EqualTo(Vector3.one));
+    }
+
+    [Test]
+    public void MapTest_LegacyDefaultCrossSectionMesh_IsCube()
     {
         var mesh = AssetDatabase
             .LoadAllAssetsAtPath("Assets/WoolLoop/Models/map_test.fbx")
@@ -150,5 +227,18 @@ public sealed class ConveyorFrameBuilderTests
         testMesh.RecalculateNormals();
         testMesh.RecalculateBounds();
         return testMesh;
+    }
+
+    private static Vector3 GetPointTangent(SplinePoint[] points, int index)
+    {
+        Vector3 tangent;
+        if (index == 0)
+            tangent = points[1].position - points[0].position;
+        else if (index == points.Length - 1)
+            tangent = points[index].position - points[index - 1].position;
+        else
+            tangent = points[index + 1].position - points[index - 1].position;
+
+        return tangent.normalized;
     }
 }
