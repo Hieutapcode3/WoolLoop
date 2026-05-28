@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Dreamteck.Splines;
+using NgoUyenNguyen.Line;
 using UnityEngine;
 
 namespace BoardSpline.Runtime
@@ -18,7 +19,7 @@ namespace BoardSpline.Runtime
             if (outerRegion == null || outerRegion.Count == 0) return;
 
             var splineComputer = target.GetOrAddComponent<SplineComputer>();
-            var splineMesh = target.GetOrAddComponent<SplineMesh>();
+            var splineMesh = target.GetComponent<SplineMesh>();
             Render(target, splineComputer, splineMesh, outerRegion, settings);
         }
 
@@ -39,82 +40,16 @@ namespace BoardSpline.Runtime
             splineComputer.SetPoints(controlPoints);
             splineComputer.Close();
 
-            if (splineMesh == null) return;
-
-            splineMesh.spline = splineComputer;
-            var channel = GetOrCreateChannel(splineMesh, settings);
-            channel.type = SplineMesh.Channel.Type.Extrude;
-            channel.count = Mathf.Max(0, controlPoints.Length - 1);
-            channel.autoCount = false;
-            channel.spacing = 0.0;
-
-            var meshDefinition = channel.GetMesh(0);
-            meshDefinition.removeInnerFaces = settings.removeInnerFaces;
-            meshDefinition.doubleSided = false;
-
-            splineMesh.RebuildImmediate();
-        }
-
-        private static SplineMesh.Channel GetOrCreateChannel(SplineMesh splineMesh, BoardSplineSettings settings)
-        {
-            var channel = splineMesh.GetChannelCount() > 0
-                ? splineMesh.GetChannel(0)
-                : splineMesh.AddChannel("Board Wall");
-
-            if (channel.GetMeshCount() == 0)
+            if (splineMesh != null)
             {
-                channel.AddMesh(CreateWallSegmentMesh(settings));
+                if (Application.isPlaying)
+                    Object.Destroy(splineMesh);
+                else
+                    Object.DestroyImmediate(splineMesh);
             }
 
-            return channel;
-        }
-
-        private static Mesh CreateWallSegmentMesh(BoardSplineSettings settings)
-        {
-            var width = Mathf.Max(0.001f, settings.borderWidth);
-            var height = Mathf.Max(0.001f, settings.wallHeight) / width;
-            var mesh = new Mesh
-            {
-                name = "Board Wall Segment"
-            };
-
-            mesh.vertices = new[]
-            {
-                new Vector3(-0.5f, -height * 0.5f, -0.5f),
-                new Vector3(0.5f, -height * 0.5f, -0.5f),
-                new Vector3(0.5f, height * 0.5f, -0.5f),
-                new Vector3(-0.5f, height * 0.5f, -0.5f),
-                new Vector3(-0.5f, -height * 0.5f, 0.5f),
-                new Vector3(0.5f, -height * 0.5f, 0.5f),
-                new Vector3(0.5f, height * 0.5f, 0.5f),
-                new Vector3(-0.5f, height * 0.5f, 0.5f),
-            };
-
-            mesh.triangles = new[]
-            {
-                0, 2, 1, 0, 3, 2,
-                4, 5, 6, 4, 6, 7,
-                0, 1, 5, 0, 5, 4,
-                3, 7, 6, 3, 6, 2,
-                1, 2, 6, 1, 6, 5,
-                0, 4, 7, 0, 7, 3,
-            };
-
-            mesh.uv = new[]
-            {
-                new Vector2(0f, 0f),
-                new Vector2(1f, 0f),
-                new Vector2(1f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(0f, 0f),
-                new Vector2(1f, 0f),
-                new Vector2(1f, 1f),
-                new Vector2(0f, 1f),
-            };
-
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
+            var meshFilter = target.GetOrAddComponent<MeshFilter>();
+            meshFilter.sharedMesh = CreateContinuousWallMesh(controlPoints, settings);
         }
 
         public static SplinePoint[] CreateControlPoints(
@@ -134,14 +69,17 @@ namespace BoardSpline.Runtime
                                + borderPoints[i].EmptyDirection * settings.borderPadding;
             }
 
-            var roundedPoints = AddRoundedCorners(
+            rawPoints = RemoveCollinearPoints(rawPoints);
+
+            var roundedPoints = RoundedCornerLine.AddRoundedCorners(
                 rawPoints,
                 settings.borderCornerRadius,
-                Mathf.Max(1, settings.borderSegmentCount)
+                Mathf.Max(1, settings.borderSegmentCount),
+                true
             );
 
-            var controlPoints = new SplinePoint[roundedPoints.Count];
-            for (var i = 0; i < roundedPoints.Count; i++)
+            var controlPoints = new SplinePoint[roundedPoints.Length];
+            for (var i = 0; i < roundedPoints.Length; i++)
             {
                 controlPoints[i] = new SplinePoint
                 {
@@ -154,55 +92,166 @@ namespace BoardSpline.Runtime
             return controlPoints;
         }
 
-        private static List<Vector3> AddRoundedCorners(Vector3[] points, float radius, int segmentCount)
+        private static Mesh CreateContinuousWallMesh(IReadOnlyList<SplinePoint> controlPoints, BoardSplineSettings settings)
         {
-            var result = new List<Vector3>();
-            if (points == null || points.Length == 0) return result;
-            if (points.Length < 3 || radius <= 0f)
+            var pointCount = controlPoints?.Count ?? 0;
+            if (pointCount < 3) return null;
+
+            var normal = GetNormal(settings);
+            var width = Mathf.Max(0.001f, settings.borderWidth);
+            var halfWidth = width * 0.5f;
+            var halfHeight = Mathf.Max(0.001f, settings.wallHeight) * 0.5f;
+            var polygonNormal = CalculatePolygonNormal(controlPoints);
+            var outwardSign = Vector3.Dot(polygonNormal, normal) >= 0f ? 1f : -1f;
+
+            var vertices = new Vector3[pointCount * 4];
+            var uvs = new Vector2[vertices.Length];
+            var outwards = new Vector3[pointCount];
+            var cumulativeDistance = 0f;
+
+            for (var i = 0; i < pointCount; i++)
             {
-                result.AddRange(points);
-                return result;
+                var previous = controlPoints[(i + pointCount - 1) % pointCount].position;
+                var current = controlPoints[i].position;
+                var next = controlPoints[(i + 1) % pointCount].position;
+
+                if (i > 0)
+                    cumulativeDistance += Vector3.Distance(controlPoints[i - 1].position, current);
+
+                var tangent = Vector3.ProjectOnPlane(next - previous, normal).normalized;
+                if (tangent == Vector3.zero)
+                    tangent = Vector3.ProjectOnPlane(next - current, normal).normalized;
+                if (tangent == Vector3.zero)
+                    tangent = Vector3.forward;
+
+                var outward = Vector3.Cross(normal, tangent).normalized * outwardSign;
+                outwards[i] = outward;
+                var outer = current + outward * halfWidth;
+                var inner = current - outward * halfWidth;
+                var topOffset = normal * halfHeight;
+                var bottomOffset = -normal * halfHeight;
+                var vertexIndex = i * 4;
+
+                vertices[vertexIndex] = outer + topOffset;
+                vertices[vertexIndex + 1] = inner + topOffset;
+                vertices[vertexIndex + 2] = outer + bottomOffset;
+                vertices[vertexIndex + 3] = inner + bottomOffset;
+
+                var u = cumulativeDistance / width;
+                uvs[vertexIndex] = new Vector2(u, 1f);
+                uvs[vertexIndex + 1] = new Vector2(u, 0f);
+                uvs[vertexIndex + 2] = new Vector2(u, 1f);
+                uvs[vertexIndex + 3] = new Vector2(u, 0f);
             }
 
+            var triangles = new List<int>(pointCount * 24);
+            for (var i = 0; i < pointCount; i++)
+            {
+                var next = (i + 1) % pointCount;
+                var currentIndex = i * 4;
+                var nextIndex = next * 4;
+                var sideOutward = (outwards[i] + outwards[next]).normalized;
+                if (sideOutward == Vector3.zero)
+                    sideOutward = outwards[i];
+
+                AddQuadFacing(vertices, triangles, currentIndex, nextIndex, nextIndex + 1, currentIndex + 1, normal);
+                AddQuadFacing(vertices, triangles, currentIndex + 2, currentIndex + 3, nextIndex + 3, nextIndex + 2, -normal);
+                AddQuadFacing(vertices, triangles, currentIndex, currentIndex + 2, nextIndex + 2, nextIndex, sideOutward);
+                AddQuadFacing(vertices, triangles, currentIndex + 1, nextIndex + 1, nextIndex + 3, currentIndex + 3, -sideOutward);
+            }
+
+            var mesh = new Mesh
+            {
+                name = "Board Continuous Wall"
+            };
+            mesh.SetVertices(vertices);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static Vector3 CalculatePolygonNormal(IReadOnlyList<SplinePoint> points)
+        {
+            var normal = Vector3.zero;
+            for (var i = 0; i < points.Count; i++)
+            {
+                var current = points[i].position;
+                var next = points[(i + 1) % points.Count].position;
+                normal.x += (current.y - next.y) * (current.z + next.z);
+                normal.y += (current.z - next.z) * (current.x + next.x);
+                normal.z += (current.x - next.x) * (current.y + next.y);
+            }
+
+            return normal == Vector3.zero ? Vector3.up : normal.normalized;
+        }
+
+        private static void AddQuadFacing(
+            IReadOnlyList<Vector3> vertices,
+            List<int> triangles,
+            int a,
+            int b,
+            int c,
+            int d,
+            Vector3 desiredNormal
+        )
+        {
+            var faceNormal = Vector3.Cross(vertices[b] - vertices[a], vertices[c] - vertices[a]);
+            if (Vector3.Dot(faceNormal, desiredNormal) >= 0f)
+            {
+                triangles.Add(a);
+                triangles.Add(b);
+                triangles.Add(c);
+                triangles.Add(a);
+                triangles.Add(c);
+                triangles.Add(d);
+                return;
+            }
+
+            triangles.Add(a);
+            triangles.Add(c);
+            triangles.Add(b);
+            triangles.Add(a);
+            triangles.Add(d);
+            triangles.Add(c);
+        }
+
+        private static Vector3[] RemoveCollinearPoints(Vector3[] points, float epsilon = 0.001f)
+        {
+            if (points == null || points.Length < 3) return points;
+
+            var result = new List<Vector3>(points.Length);
             for (var i = 0; i < points.Length; i++)
             {
                 var previous = points[(i + points.Length - 1) % points.Length];
                 var current = points[i];
                 var next = points[(i + 1) % points.Length];
 
-                var toPrevious = previous - current;
-                var toNext = next - current;
-                var previousDistance = toPrevious.magnitude;
-                var nextDistance = toNext.magnitude;
+                var incoming = current - previous;
+                var outgoing = next - current;
+                var incomingSqrMagnitude = incoming.sqrMagnitude;
+                var outgoingSqrMagnitude = outgoing.sqrMagnitude;
 
-                if (previousDistance <= Mathf.Epsilon || nextDistance <= Mathf.Epsilon)
-                {
-                    result.Add(current);
+                if (incomingSqrMagnitude <= epsilon * epsilon || outgoingSqrMagnitude <= epsilon * epsilon)
                     continue;
-                }
 
-                var cornerDistance = Mathf.Min(radius, previousDistance * 0.5f, nextDistance * 0.5f);
-                var start = current + toPrevious.normalized * cornerDistance;
-                var end = current + toNext.normalized * cornerDistance;
+                if (IsCollinearSameDirection(incoming, outgoing, epsilon))
+                    continue;
 
-                result.Add(start);
-                for (var segment = 1; segment <= segmentCount; segment++)
-                {
-                    var t = segment / (float)(segmentCount + 1);
-                    result.Add(QuadraticBezier(start, current, end, t));
-                }
-                result.Add(end);
+                result.Add(current);
             }
 
-            return result;
+            return result.Count >= 3 ? result.ToArray() : points;
         }
 
-        private static Vector3 QuadraticBezier(Vector3 a, Vector3 b, Vector3 c, float t)
+        private static bool IsCollinearSameDirection(Vector3 incoming, Vector3 outgoing, float epsilon)
         {
-            var oneMinusT = 1f - t;
-            return oneMinusT * oneMinusT * a
-                   + 2f * oneMinusT * t * b
-                   + t * t * c;
+            var cross = Vector3.Cross(incoming, outgoing);
+            var magnitudeProduct = incoming.magnitude * outgoing.magnitude;
+            return cross.magnitude <= epsilon * magnitudeProduct
+                   && Vector3.Dot(incoming, outgoing) > 0f;
         }
 
         private static IReadOnlyList<BoardSplineBorderPoint> GetLargestRegion(

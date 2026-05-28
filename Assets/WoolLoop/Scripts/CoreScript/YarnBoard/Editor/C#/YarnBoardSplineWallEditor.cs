@@ -35,8 +35,9 @@ public static class YarnBoardSplineWallEditor
         var wall = new GameObject(WallObjectName);
         Undo.RegisterCreatedObjectUndo(wall, "Render Yarn Board Spline Wall");
 
-        var splineComputer = wall.AddComponent<SplineComputer>();
-        var splineMesh = wall.AddComponent<SplineMesh>();
+        wall.AddComponent<SplineComputer>();
+        wall.AddComponent<MeshFilter>();
+        wall.AddComponent<MeshRenderer>();
         var renderer = wall.GetComponent<MeshRenderer>();
         if (renderer != null)
         {
