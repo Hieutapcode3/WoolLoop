@@ -8,6 +8,7 @@ public static class YarnBoardSplineWallEditor
 {
     private const string LevelPath = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/Levels/Level_001.json";
     private const string WallObjectName = "Level_001_DreamteckSplineWall";
+    private const string ObstacleContainerName = "Blocked Obstacles";
 
     [MenuItem("GameEditor/YarnBoard/Render Level 001 Wall")]
     public static void RenderLevel001Wall()
@@ -83,9 +84,67 @@ public static class YarnBoardSplineWallEditor
         builder.SetPath(borderPath, true);
         builder.Build();
 
+        SpawnBlockedObstacles(level, adapter, wall.transform);
+
         Selection.activeGameObject = wall;
         EditorSceneManager.MarkSceneDirty(wall.scene);
         Debug.Log($"Rendered Dreamteck spline wall for {level.levelId} from {LevelPath}");
+    }
+
+    private static void SpawnBlockedObstacles(LevelData level, BoardSplineDataAdapterInfo adapter, Transform parent)
+    {
+        if (PrefabProfile.ObstaclePrefab == null) return;
+
+        var existing = parent.Find(ObstacleContainerName);
+        if (existing != null)
+        {
+            Undo.DestroyObjectImmediate(existing.gameObject);
+        }
+
+        var container = new GameObject(ObstacleContainerName);
+        Undo.RegisterCreatedObjectUndo(container, "Spawn Yarn Board Obstacles");
+        container.transform.SetParent(parent, false);
+
+        for (var y = 0; y < level.size.y; y++)
+        {
+            for (var x = 0; x < level.size.x; x++)
+            {
+                var cell = new Vector2Int(x, y);
+                if (!IsBlockedEmptyCell(level, cell)) continue;
+
+                var instance = PrefabUtility.InstantiatePrefab(PrefabProfile.ObstaclePrefab) as GameObject;
+                if (instance == null) continue;
+
+                Undo.RegisterCreatedObjectUndo(instance, "Spawn Yarn Board Obstacles");
+                instance.transform.SetParent(container.transform, true);
+                instance.transform.position = adapter.IndexToWorld(cell);
+            }
+        }
+    }
+
+    private static bool IsBlockedEmptyCell(LevelData level, Vector2Int cell)
+    {
+        if (level == null || level.IsActive(cell)) return false;
+
+        return HasActiveInDirection(level, cell, Vector2Int.up)
+            && HasActiveInDirection(level, cell, Vector2Int.down)
+            && HasActiveInDirection(level, cell, Vector2Int.left)
+            && HasActiveInDirection(level, cell, Vector2Int.right);
+    }
+
+    private static bool HasActiveInDirection(LevelData level, Vector2Int start, Vector2Int dir)
+    {
+        var current = start + dir;
+
+        while (level.IsInside(current))
+        {
+            if (level.IsActive(current))
+                return true;
+
+            current += dir;
+        }
+
+        return false;
     }
 
     private static List<BoardSplineBorderPoint> GetLargestRegion(
@@ -124,60 +183,6 @@ public static class YarnBoardSplineWallEditor
         }
 
         return rawPoints;
-    }
-
-    private static Mesh CreateWallCrossSection(float width, float height)
-    {
-        var halfWidth = Mathf.Max(0.001f, width) * 0.5f;
-        var halfHeight = Mathf.Max(0.001f, height) * 0.5f;
-        var depth = 1f;
-
-        var mesh = new Mesh
-        {
-            name = "Wall Cross Section",
-            hideFlags = HideFlags.HideAndDontSave
-        };
-
-        var vertices = new[]
-        {
-            new Vector3(-halfWidth, -halfHeight, 0f),
-            new Vector3(halfWidth, -halfHeight, 0f),
-            new Vector3(halfWidth, halfHeight, 0f),
-            new Vector3(-halfWidth, halfHeight, 0f),
-            new Vector3(-halfWidth, -halfHeight, depth),
-            new Vector3(halfWidth, -halfHeight, depth),
-            new Vector3(halfWidth, halfHeight, depth),
-            new Vector3(-halfWidth, halfHeight, depth),
-        };
-
-        var triangles = new[]
-        {
-            0, 2, 1, 0, 3, 2,
-            4, 5, 6, 4, 6, 7,
-            0, 1, 5, 0, 5, 4,
-            1, 2, 6, 1, 6, 5,
-            2, 3, 7, 2, 7, 6,
-            3, 0, 4, 3, 4, 7
-        };
-
-        var uvs = new[]
-        {
-            Vector2.zero,
-            Vector2.right,
-            Vector2.one,
-            Vector2.up,
-            Vector2.zero,
-            Vector2.right,
-            Vector2.one,
-            Vector2.up
-        };
-
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
-        mesh.uv = uvs;
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-        return mesh;
     }
 
     private static Vector3 GetNormal(BoardSplineSettings settings) =>
