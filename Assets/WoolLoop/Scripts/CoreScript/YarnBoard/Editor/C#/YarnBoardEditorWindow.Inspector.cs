@@ -43,15 +43,15 @@ public partial class YarnBoardEditorWindow
         });
         _inspectorContent.Add(levelId);
 
-        ObjectField colorProfile = new ObjectField("Color Profile");
-        colorProfile.objectType = typeof(ColorProfile);
-        colorProfile.value = _colorProfile;
-        colorProfile.RegisterValueChangedCallback(evt =>
+        ObjectField colorsParam = new ObjectField("Colors Param");
+        colorsParam.objectType = typeof(ColorsParamSO);
+        colorsParam.value = _colorsParam;
+        colorsParam.RegisterValueChangedCallback(evt =>
         {
-            _colorProfile = evt.newValue as ColorProfile;
+            _colorsParam = evt.newValue as ColorsParamSO;
             RefreshAll();
         });
-        _inspectorContent.Add(colorProfile);
+        _inspectorContent.Add(colorsParam);
 
         Vector3Field center = new Vector3Field("Center");
         center.value = _currentLevel.boardSetting.centerPos;

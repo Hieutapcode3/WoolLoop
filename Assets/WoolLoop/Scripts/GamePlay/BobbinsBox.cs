@@ -4,7 +4,6 @@ using UnityEngine;
 public class BobbinsBox : MonoBehaviour
 {
     [TitleGroup("References")]
-    [SerializeField] private ColorsParamSO colorsParam;
 
     [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
     private WoolColorType currentColorType;
@@ -74,9 +73,6 @@ public class BobbinsBox : MonoBehaviour
 
     private Color ResolveColor(WoolColorType colorType)
     {
-        if (colorsParam != null)
-            return colorsParam.GetColor(colorType);
-
-        return Color.white;
+        return ColorsParamSO.GetColor(colorType);
     }
 }

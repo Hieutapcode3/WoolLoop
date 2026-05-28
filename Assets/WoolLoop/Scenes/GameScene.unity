@@ -2519,7 +2519,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 11400000, guid: 83ff41e8deb77fd4b8eb9c579ac7104d, type: 2}
 --- !u!1001 &586155497
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3357,7 +3356,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 11400000, guid: 83ff41e8deb77fd4b8eb9c579ac7104d, type: 2}
 --- !u!1001 &792660277
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6042,7 +6040,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9078297664781665083, guid: ac2c62c1affbdd54cbff9e01346155b6, type: 3}
       propertyPath: currentSpotSpeed
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 9078297664781665083, guid: ac2c62c1affbdd54cbff9e01346155b6, type: 3}
       propertyPath: points.Array.size
@@ -7757,7 +7755,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 11400000, guid: 83ff41e8deb77fd4b8eb9c579ac7104d, type: 2}
 --- !u!1001 &1069055389
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8879,7 +8876,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 0}
 --- !u!1001 &1284721782
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9818,7 +9814,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 0}
 --- !u!1001 &1452022583
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11045,7 +11040,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 0}
 --- !u!1001 &1790709948
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12173,7 +12167,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 11400000, guid: 83ff41e8deb77fd4b8eb9c579ac7104d, type: 2}
 --- !u!1001 &2014309486
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12483,7 +12476,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8750087616666164b81bbc8a88f5d357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorsParam: {fileID: 0}
 --- !u!1001 &2097592355
 PrefabInstance:
   m_ObjectHideFlags: 0

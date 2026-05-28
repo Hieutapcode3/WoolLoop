@@ -100,7 +100,7 @@ public class ConveyorEntrance : MonoBehaviour
         YarnItem item = Instantiate(yarnItemPrefab, spot.transform);
         item.transform.localPosition = Vector3.zero;
         item.transform.localRotation = Quaternion.identity;
-        item.Initialize(yarnBall.WoolColorType, yarnBall.ColorsParam);
+        item.Initialize(yarnBall.WoolColorType);
 
         if (!spot.TryAttachYarnItem(item))
         {

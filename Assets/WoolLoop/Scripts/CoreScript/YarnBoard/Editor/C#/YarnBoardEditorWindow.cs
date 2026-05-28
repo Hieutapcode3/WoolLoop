@@ -69,7 +69,7 @@ public partial class YarnBoardEditorWindow : EditorWindow
     private Vector2Int _selectedCell = new Vector2Int(-1, -1);
     private WoolBallData _selectedYarnBall;
     private EditorToolMode _currentTool = EditorToolMode.Select;
-    private ColorProfile _colorProfile;
+    private ColorsParamSO _colorsParam;
     private bool _isDirty;
     private bool _isDragging;
     private string _searchText = string.Empty;
@@ -123,7 +123,7 @@ public partial class YarnBoardEditorWindow : EditorWindow
 
         CacheElements();
         BindResponsiveLayout();
-        LoadFirstColorProfile();
+        LoadFirstColorsParam();
         BindNavigation();
         BindWorkspace();
         RefreshLevelList();
@@ -251,14 +251,14 @@ public partial class YarnBoardEditorWindow : EditorWindow
         }
     }
 
-    private void LoadFirstColorProfile()
+    private void LoadFirstColorsParam()
     {
-        string[] guids = AssetDatabase.FindAssets("t:ColorProfile");
+        string[] guids = AssetDatabase.FindAssets("t:ColorsParamSO");
         if (guids.Length == 0)
             return;
 
         string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-        _colorProfile = AssetDatabase.LoadAssetAtPath<ColorProfile>(path);
+        _colorsParam = AssetDatabase.LoadAssetAtPath<ColorsParamSO>(path);
     }
 
     private int ToIndex(Vector2Int cell)

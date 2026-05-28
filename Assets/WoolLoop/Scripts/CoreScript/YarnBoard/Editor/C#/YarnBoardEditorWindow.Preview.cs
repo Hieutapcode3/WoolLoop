@@ -80,22 +80,16 @@ public partial class YarnBoardEditorWindow
 
     private Color GetColorForBall(int colorId)
     {
-        if (_colorProfile != null && _colorProfile.colorPalette != null)
-        {
-            for (int i = 0; i < _colorProfile.colorPalette.Length; i++)
-            {
-                if (_colorProfile.colorPalette[i].colorID == colorId || i == colorId)
-                    return _colorProfile.colorPalette[i].color;
-            }
-        }
+        if (_colorsParam != null && _colorsParam.TryGetColorByPaletteIndex(colorId, out _, out Color displayColor))
+            return displayColor;
 
-        return ColorProfile.GetColor(colorId);
+        return ColorsParamSO.GetColorByPaletteIndex(colorId);
     }
 
     private int GetColorCount()
     {
-        if (_colorProfile != null && _colorProfile.colorPalette != null)
-            return _colorProfile.colorPalette.Length;
-        return ColorProfile.Count();
+        if (_colorsParam != null)
+            return _colorsParam.ColorCount;
+        return ColorsParamSO.Count();
     }
 }
