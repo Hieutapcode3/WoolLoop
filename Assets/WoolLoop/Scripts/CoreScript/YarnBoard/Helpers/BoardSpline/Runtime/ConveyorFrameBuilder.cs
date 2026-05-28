@@ -29,6 +29,9 @@ namespace BoardSpline.Runtime
         [SerializeField] private Vector3[] centerPaths = new Vector3[0];
 
         [TitleGroup("Path")]
+        [SerializeField] private bool editCenterPath;
+
+        [TitleGroup("Path")]
         [SerializeField, Min(0f)] private float cornerRadius = 0.25f;
 
         [TitleGroup("Path")]
