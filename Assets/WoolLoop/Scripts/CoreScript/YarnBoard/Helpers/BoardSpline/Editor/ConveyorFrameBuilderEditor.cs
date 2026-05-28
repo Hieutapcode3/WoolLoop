@@ -5,8 +5,8 @@ using UnityEngine;
 
 namespace BoardSpline.Editor
 {
-    [CustomEditor(typeof(ConveyorFrameBuilder))]
-    public sealed class ConveyorFrameBuilderEditor : OdinEditor
+    [CustomEditor(typeof(CustomFrameBuilder))]
+    public sealed class CustomFrameBuilderEditor : OdinEditor
     {
         private SerializedProperty centerPaths;
         private SerializedProperty editCenterPath;
@@ -29,7 +29,7 @@ namespace BoardSpline.Editor
             serializedObject.Update();
             if (!editCenterPath.boolValue) return;
 
-            var builder = (ConveyorFrameBuilder)target;
+            var builder = (CustomFrameBuilder)target;
             var transform = builder.transform;
 
             Handles.color = new Color(0.9f, 0.9f, 0.2f, 0.9f);

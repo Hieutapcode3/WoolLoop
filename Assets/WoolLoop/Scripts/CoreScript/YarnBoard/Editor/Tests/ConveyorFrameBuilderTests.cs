@@ -5,7 +5,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
-public sealed class ConveyorFrameBuilderTests
+public sealed class CustomFrameBuilderTests
 {
     private GameObject testObject;
     private Mesh testMesh;
@@ -113,7 +113,7 @@ public sealed class ConveyorFrameBuilderTests
     [Test]
     public void CreateRoundedPath_RemovesDuplicateAndCollinearPoints()
     {
-        var rounded = ConveyorFrameBuilder.CreateRoundedPath(
+        var rounded = CustomFrameBuilder.CreateRoundedPath(
             new[]
             {
                 Vector3.zero,
@@ -135,7 +135,7 @@ public sealed class ConveyorFrameBuilderTests
     [Test]
     public void CalculateLength_OpenPath_UsesConsecutiveSegments()
     {
-        var length = ConveyorFrameBuilder.CalculateLength(
+        var length = CustomFrameBuilder.CalculateLength(
             new[]
             {
                 Vector3.zero,
@@ -151,7 +151,7 @@ public sealed class ConveyorFrameBuilderTests
     [Test]
     public void CalculateLength_ClosedPath_IncludesClosingSegment()
     {
-        var length = ConveyorFrameBuilder.CalculateLength(
+        var length = CustomFrameBuilder.CalculateLength(
             new[]
             {
                 Vector3.zero,
@@ -168,9 +168,9 @@ public sealed class ConveyorFrameBuilderTests
     [Test]
     public void CalculateLength_EmptyOrSinglePoint_ReturnsZero()
     {
-        Assert.That(ConveyorFrameBuilder.CalculateLength(null, false), Is.Zero);
-        Assert.That(ConveyorFrameBuilder.CalculateLength(new Vector3[0], false), Is.Zero);
-        Assert.That(ConveyorFrameBuilder.CalculateLength(new[] { Vector3.one }, true), Is.Zero);
+        Assert.That(CustomFrameBuilder.CalculateLength(null, false), Is.Zero);
+        Assert.That(CustomFrameBuilder.CalculateLength(new Vector3[0], false), Is.Zero);
+        Assert.That(CustomFrameBuilder.CalculateLength(new[] { Vector3.one }, true), Is.Zero);
     }
 
     [Test]
@@ -183,10 +183,10 @@ public sealed class ConveyorFrameBuilderTests
             Vector3.forward * 2f + Vector3.right * 2f
         };
 
-        Assert.That(ConveyorFrameBuilder.SamplePathAtPercent(path, 0f, false), Is.EqualTo(Vector3.zero));
-        Assert.That(ConveyorFrameBuilder.SamplePathAtPercent(path, 0.5f, false), Is.EqualTo(Vector3.forward * 2f));
+        Assert.That(CustomFrameBuilder.SamplePathAtPercent(path, 0f, false), Is.EqualTo(Vector3.zero));
+        Assert.That(CustomFrameBuilder.SamplePathAtPercent(path, 0.5f, false), Is.EqualTo(Vector3.forward * 2f));
         Assert.That(
-            ConveyorFrameBuilder.SamplePathAtPercent(path, 1f, false),
+            CustomFrameBuilder.SamplePathAtPercent(path, 1f, false),
             Is.EqualTo(Vector3.forward * 2f + Vector3.right * 2f)
         );
     }
@@ -202,7 +202,7 @@ public sealed class ConveyorFrameBuilderTests
             Vector3.right
         };
 
-        Assert.That(ConveyorFrameBuilder.SamplePathAtPercent(path, 1f, true), Is.EqualTo(Vector3.zero));
+        Assert.That(CustomFrameBuilder.SamplePathAtPercent(path, 1f, true), Is.EqualTo(Vector3.zero));
     }
 
     [Test]
@@ -327,10 +327,10 @@ public sealed class ConveyorFrameBuilderTests
         Assert.That(mesh.vertexCount, Is.GreaterThan(0));
     }
 
-    private ConveyorFrameBuilder CreateBuilder()
+    private CustomFrameBuilder CreateBuilder()
     {
         testObject = new GameObject("Conveyor Frame Builder Test");
-        return testObject.AddComponent<ConveyorFrameBuilder>();
+        return testObject.AddComponent<CustomFrameBuilder>();
     }
 
     private Mesh CreateSourceMesh()

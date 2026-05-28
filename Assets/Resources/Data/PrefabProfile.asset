@@ -13,4 +13,6 @@ MonoBehaviour:
   m_Name: PrefabProfile
   m_EditorClassIdentifier: 
   cellPrefab: {fileID: 3782661219922041137, guid: 99c24410df88baf42b8ea117fcba56a8, type: 3}
+  obstaclePrefab: {fileID: 3798006542734325293, guid: 7fe39276e45ac744a9dcfca6b435d411, type: 3}
   wallMaterial: {fileID: 2100000, guid: b03b41fcefe87504aac028916ad6685a, type: 2}
+  outerWallMesh: {fileID: 4300000, guid: 8aba5f7c7ddd25d4684ef2ed9368b90a, type: 2}

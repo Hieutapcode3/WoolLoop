@@ -10,7 +10,13 @@ public class PrefabProfile : ScriptableObject
     [SerializeField] private GameObject cellPrefab;
     public static GameObject CellPrefab => asset.Value.cellPrefab;
 
+    [SerializeField] private GameObject obstaclePrefab;
+    public static GameObject ObstaclePrefab => asset.Value.obstaclePrefab;
+
     [SerializeField] private Material wallMaterial;
     public static Material WallMaterial => asset.Value.wallMaterial;
+
+    [SerializeField] private Mesh outerWallMesh;
+    public static Mesh OuterWallMesh => asset.Value.outerWallMesh;
 }
 

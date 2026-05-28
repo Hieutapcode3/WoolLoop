@@ -136,7 +136,7 @@ namespace BoardSpline.Runtime
             UpdateDebugCounts(new List<BoardConveyorPath>());
         }
 
-        public List<ConveyorFrameBuilder> BuildConveyors(IBoardConveyorGraphData graphData, bool clearExisting)
+        public List<CustomFrameBuilder> BuildConveyors(IBoardConveyorGraphData graphData, bool clearExisting)
         {
             var paths = BoardConveyorGraphAnalyzer.Analyze(graphData);
             UpdateDebugCounts(paths);
@@ -145,7 +145,7 @@ namespace BoardSpline.Runtime
                 ClearGeneratedChildren();
 
             var children = GetGeneratedChildren();
-            var builders = new List<ConveyorFrameBuilder>(paths.Count);
+            var builders = new List<CustomFrameBuilder>(paths.Count);
             for (var i = 0; i < paths.Count; i++)
             {
                 var builder = GetOrCreateBuilder(children, i);
@@ -164,17 +164,17 @@ namespace BoardSpline.Runtime
             return debugGraph;
         }
 
-        private ConveyorFrameBuilder GetOrCreateBuilder(IReadOnlyList<ConveyorFrameBuilder> existing, int index)
+        private CustomFrameBuilder GetOrCreateBuilder(IReadOnlyList<CustomFrameBuilder> existing, int index)
         {
             if (index < existing.Count && existing[index] != null)
                 return existing[index];
 
             var child = new GameObject($"{GeneratedChildPrefix}{index:00}");
             child.transform.SetParent(transform, false);
-            return child.AddComponent<ConveyorFrameBuilder>();
+            return child.AddComponent<CustomFrameBuilder>();
         }
 
-        private void ConfigureBuilder(ConveyorFrameBuilder builder, BoardConveyorPath path, int index)
+        private void ConfigureBuilder(CustomFrameBuilder builder, BoardConveyorPath path, int index)
         {
             builder.gameObject.name = $"{GeneratedChildPrefix}{index:00}";
             builder.transform.localPosition = Vector3.zero;
@@ -193,14 +193,14 @@ namespace BoardSpline.Runtime
             builder.Build();
         }
 
-        private List<ConveyorFrameBuilder> GetGeneratedChildren()
+        private List<CustomFrameBuilder> GetGeneratedChildren()
         {
-            var result = new List<ConveyorFrameBuilder>();
+            var result = new List<CustomFrameBuilder>();
             for (var i = 0; i < transform.childCount; i++)
             {
                 var child = transform.GetChild(i);
                 if (!child.name.StartsWith(GeneratedChildPrefix)) continue;
-                if (child.TryGetComponent(out ConveyorFrameBuilder builder))
+                if (child.TryGetComponent(out CustomFrameBuilder builder))
                     result.Add(builder);
             }
 
