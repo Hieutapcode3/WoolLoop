@@ -22,7 +22,6 @@ public sealed class ConveyorFrameBuilderTests
     {
         var builder = CreateBuilder();
         var sourceMesh = CreateSourceMesh();
-        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.CustomMesh;
         builder.UShapeCrossSection = sourceMesh;
         builder.SetPath(
             new[]
@@ -46,7 +45,7 @@ public sealed class ConveyorFrameBuilderTests
 
         var channel = splineMesh.GetChannel(0);
         Assert.That(channel.type, Is.EqualTo(SplineMesh.Channel.Type.Extrude));
-        Assert.That(channel.count, Is.EqualTo(1));
+        Assert.That(channel.count, Is.EqualTo(Mathf.Max(1, builder.GetRoundedPath().Length - 1)));
         Assert.That(channel.autoCount, Is.False);
         Assert.That(channel.overrideNormal, Is.False);
         Assert.That(channel.customNormal, Is.EqualTo(Vector3.up));
@@ -62,7 +61,6 @@ public sealed class ConveyorFrameBuilderTests
     public void Build_ClosedPath_ClosesSpline()
     {
         var builder = CreateBuilder();
-        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.CustomMesh;
         builder.UShapeCrossSection = CreateSourceMesh();
         builder.SetPath(
             new[]
@@ -83,8 +81,7 @@ public sealed class ConveyorFrameBuilderTests
     public void Build_Stable3DPath_KeepsNormalsPerpendicularToVerticalSegment()
     {
         var builder = CreateBuilder();
-        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.GeneratedUShape;
-        builder.Orientation = ConveyorFrameBuilder.OrientationMode.Stable3D;
+        builder.UShapeCrossSection = CreateSourceMesh();
         builder.SetPath(
             new[]
             {
@@ -136,19 +133,6 @@ public sealed class ConveyorFrameBuilderTests
     }
 
     [Test]
-    public void CreateUShapeCrossSectionMesh_HasExpectedBoundsAndGeometry()
-    {
-        testMesh = ConveyorFrameBuilder.CreateUShapeCrossSectionMesh(0.6f, 0.35f, 0.08f, 0.2f);
-
-        Assert.That(testMesh, Is.Not.Null);
-        Assert.That(testMesh.vertexCount, Is.GreaterThan(0));
-        Assert.That(testMesh.triangles.Length, Is.GreaterThan(0));
-        Assert.That(testMesh.bounds.size.x, Is.EqualTo(0.6f).Within(0.001f));
-        Assert.That(testMesh.bounds.size.y, Is.EqualTo(0.35f).Within(0.001f));
-        Assert.That(testMesh.bounds.size.z, Is.EqualTo(0.2f).Within(0.001f));
-    }
-
-    [Test]
     public void Build_MapTestCustomMeshPreset_AppliesAxisRemapRotation()
     {
         var builder = CreateBuilder();
@@ -158,7 +142,6 @@ public sealed class ConveyorFrameBuilderTests
             .FirstOrDefault(asset => asset.name == "Cube");
         Assert.That(mesh, Is.Not.Null);
 
-        builder.SectionSource = ConveyorFrameBuilder.CrossSectionSource.CustomMesh;
         builder.CustomMeshUseMapTestPreset = true;
         builder.UShapeCrossSection = mesh;
         builder.SetPath(new[] { Vector3.zero, Vector3.forward }, false);
@@ -170,6 +153,54 @@ public sealed class ConveyorFrameBuilderTests
         Assert.That(meshDefinition.rotation, Is.EqualTo(new Vector3(0f, 90f, 0f)));
         Assert.That(meshDefinition.offset, Is.EqualTo(Vector3.zero));
         Assert.That(meshDefinition.scale, Is.EqualTo(Vector3.one));
+    }
+
+    [Test]
+    public void Build_CustomMeshCurvedOpenPath_UsesRoundedSegmentCount()
+    {
+        var builder = CreateBuilder();
+        builder.UShapeCrossSection = CreateSourceMesh();
+        builder.CornerRadius = 0.25f;
+        builder.CornerSegments = 4;
+        builder.SetPath(
+            new[]
+            {
+                Vector3.zero,
+                Vector3.forward,
+                Vector3.forward + Vector3.right
+            },
+            false
+        );
+
+        Assert.That(builder.Build(), Is.True);
+
+        var expected = Mathf.Max(1, builder.GetRoundedPath().Length - 1);
+        Assert.That(testObject.GetComponent<SplineMesh>().GetChannel(0).count, Is.EqualTo(expected));
+        Assert.That(expected, Is.GreaterThan(1));
+    }
+
+    [Test]
+    public void Build_CustomMeshClosedLoop_UsesRoundedPathLength()
+    {
+        var builder = CreateBuilder();
+        builder.UShapeCrossSection = CreateSourceMesh();
+        builder.CornerRadius = 0.25f;
+        builder.CornerSegments = 4;
+        builder.SetPath(
+            new[]
+            {
+                Vector3.zero,
+                Vector3.forward,
+                Vector3.forward + Vector3.right,
+                Vector3.right
+            },
+            true
+        );
+
+        Assert.That(builder.Build(), Is.True);
+
+        var expected = Mathf.Max(1, builder.GetRoundedPath().Length);
+        Assert.That(testObject.GetComponent<SplineMesh>().GetChannel(0).count, Is.EqualTo(expected));
     }
 
     [Test]

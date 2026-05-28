@@ -12,18 +12,6 @@ namespace BoardSpline.Runtime
     [RequireComponent(typeof(SplineMesh))]
     public sealed class ConveyorFrameBuilder : MonoBehaviour
     {
-        public enum OrientationMode
-        {
-            Stable3D,
-            FixedNormal
-        }
-
-        public enum CrossSectionSource
-        {
-            GeneratedUShape,
-            CustomMesh
-        }
-
         private const string ChannelName = "Conveyor Frame";
         private const float Epsilon = 0.001f;
         private const string DefaultCrossSectionName = "Cube";
@@ -33,24 +21,35 @@ namespace BoardSpline.Runtime
         private const string DefaultCrossSectionPath = "Assets/WoolLoop/Models/map_test.fbx";
 #endif
 
+        [TitleGroup("Input")]
         [SerializeField] private Vector3[] centerPaths = new Vector3[0];
-        [SerializeField, Min(0f)] private float cornerRadius = 0.25f;
-        [SerializeField, Min(1)] private int cornerSegments = 6;
-        [SerializeField] private bool closed;
-        [SerializeField] private OrientationMode orientationMode = OrientationMode.Stable3D;
-        [SerializeField] private CrossSectionSource crossSectionSource = CrossSectionSource.GeneratedUShape;
-        [SerializeField] private Mesh uShapeCrossSection;
-        [SerializeField] private Vector3 splineNormal = Vector3.up;
-        [SerializeField, Min(0.001f)] private float generatedWidth = 0.6f;
-        [SerializeField, Min(0.001f)] private float generatedHeight = 0.35f;
-        [SerializeField, Min(0.001f)] private float generatedWallThickness = 0.08f;
-        [SerializeField, Min(0.001f)] private float generatedSectionLength = 0.2f;
-        [SerializeField] private bool customMeshUseMapTestPreset = true;
-        [SerializeField] private Vector3 customMeshRotation = DefaultMapTestMeshRotation;
-        [SerializeField] private Vector3 customMeshOffset = Vector3.zero;
-        [SerializeField] private Vector3 customMeshScale = Vector3.one;
 
-        private Mesh generatedCrossSectionMesh;
+        [TitleGroup("Input")]
+        [SerializeField, Min(0f)] private float cornerRadius = 0.25f;
+
+        [TitleGroup("Input")]
+        [SerializeField, Min(1)] private int cornerSegments = 6;
+
+        [TitleGroup("Input")]
+        [SerializeField] private bool closed;
+
+        [TitleGroup("Input")]
+        [SerializeField] private Vector3 splineNormal = Vector3.up;
+
+        [TitleGroup("Mesh Settings")]
+        [SerializeField] private Mesh uShapeCrossSection;
+
+        [TitleGroup("Mesh Settings")]
+        [SerializeField] private bool customMeshUseMapTestPreset = true;
+
+        [TitleGroup("Mesh Settings")]
+        [SerializeField] private Vector3 customMeshRotation = DefaultMapTestMeshRotation;
+
+        [TitleGroup("Mesh Settings")]
+        [SerializeField] private Vector3 customMeshOffset = Vector3.zero;
+
+        [TitleGroup("Mesh Settings")]
+        [SerializeField] private Vector3 customMeshScale = Vector3.one;
 
         public Vector3[] CenterPaths
         {
@@ -76,18 +75,6 @@ namespace BoardSpline.Runtime
             set => closed = value;
         }
 
-        public OrientationMode Orientation
-        {
-            get => orientationMode;
-            set => orientationMode = value;
-        }
-
-        public CrossSectionSource SectionSource
-        {
-            get => crossSectionSource;
-            set => crossSectionSource = value;
-        }
-
         public Mesh UShapeCrossSection
         {
             get => uShapeCrossSection;
@@ -98,30 +85,6 @@ namespace BoardSpline.Runtime
         {
             get => GetNormal();
             set => splineNormal = value == Vector3.zero ? Vector3.up : value.normalized;
-        }
-
-        public float GeneratedWidth
-        {
-            get => generatedWidth;
-            set => generatedWidth = Mathf.Max(0.001f, value);
-        }
-
-        public float GeneratedHeight
-        {
-            get => generatedHeight;
-            set => generatedHeight = Mathf.Max(0.001f, value);
-        }
-
-        public float GeneratedWallThickness
-        {
-            get => generatedWallThickness;
-            set => generatedWallThickness = Mathf.Max(0.001f, value);
-        }
-
-        public float GeneratedSectionLength
-        {
-            get => generatedSectionLength;
-            set => generatedSectionLength = Mathf.Max(0.001f, value);
         }
 
         public bool CustomMeshUseMapTestPreset
@@ -151,8 +114,6 @@ namespace BoardSpline.Runtime
         private void Reset()
         {
             splineNormal = Vector3.up;
-            orientationMode = OrientationMode.Stable3D;
-            crossSectionSource = CrossSectionSource.GeneratedUShape;
             customMeshUseMapTestPreset = true;
             customMeshRotation = DefaultMapTestMeshRotation;
             customMeshOffset = Vector3.zero;
@@ -165,10 +126,6 @@ namespace BoardSpline.Runtime
             cornerRadius = Mathf.Max(0f, cornerRadius);
             cornerSegments = Mathf.Max(1, cornerSegments);
             if (splineNormal == Vector3.zero) splineNormal = Vector3.up;
-            generatedWidth = Mathf.Max(0.001f, generatedWidth);
-            generatedHeight = Mathf.Max(0.001f, generatedHeight);
-            generatedWallThickness = Mathf.Max(0.001f, generatedWallThickness);
-            generatedSectionLength = Mathf.Max(0.001f, generatedSectionLength);
             if (customMeshScale == Vector3.zero) customMeshScale = Vector3.one;
             TryAssignDefaultCrossSection();
         }
@@ -200,7 +157,7 @@ namespace BoardSpline.Runtime
             var crossSection = GetCrossSectionMesh();
             if (crossSection == null) return false;
 
-            var normals = CreatePointNormals(roundedPath, closed, GetNormal(), orientationMode);
+            var normals = CreatePointNormals(roundedPath, closed, GetNormal());
             var splinePoints = new SplinePoint[roundedPath.Length];
             for (var i = 0; i < roundedPath.Length; i++)
             {
@@ -223,8 +180,7 @@ namespace BoardSpline.Runtime
                 splineMesh,
                 crossSection,
                 GetNormal(),
-                orientationMode,
-                crossSectionSource == CrossSectionSource.CustomMesh,
+                GetSectionCount(roundedPath.Length, closed),
                 GetCustomMeshRotation(),
                 customMeshOffset,
                 customMeshScale
@@ -295,44 +251,10 @@ namespace BoardSpline.Runtime
             return HasEnoughPoints(result, isClosed) ? result.ToArray() : deduped.ToArray();
         }
 
-        public static Mesh CreateUShapeCrossSectionMesh(float width, float height, float wallThickness, float sectionLength)
-        {
-            width = Mathf.Max(0.001f, width);
-            height = Mathf.Max(0.001f, height);
-            wallThickness = Mathf.Clamp(wallThickness, 0.001f, Mathf.Min(width, height) * 0.49f);
-            sectionLength = Mathf.Max(0.001f, sectionLength);
-
-            var halfWidth = width * 0.5f;
-            var halfLength = sectionLength * 0.5f;
-            var outerMinX = -halfWidth;
-            var outerMaxX = halfWidth;
-            var innerMinX = -halfWidth + wallThickness;
-            var innerMaxX = halfWidth - wallThickness;
-            var bottomY = 0f;
-            var innerBottomY = wallThickness;
-            var topY = height;
-
-            var mesh = new Mesh { name = "Generated Conveyor U-Shape" };
-            var vertices = new List<Vector3>(48);
-            var triangles = new List<int>(72);
-
-            AddBox(vertices, triangles, outerMinX, innerMinX, bottomY, topY, -halfLength, halfLength);
-            AddBox(vertices, triangles, innerMaxX, outerMaxX, bottomY, topY, -halfLength, halfLength);
-            AddBox(vertices, triangles, innerMinX, innerMaxX, bottomY, innerBottomY, -halfLength, halfLength);
-
-            mesh.SetVertices(vertices);
-            mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateTangents();
-            mesh.RecalculateBounds();
-            return mesh;
-        }
-
         public static Vector3[] CreatePointNormals(
             IReadOnlyList<Vector3> path,
             bool isClosed,
-            Vector3 preferredNormal,
-            OrientationMode mode
+            Vector3 preferredNormal
         )
         {
             var count = path?.Count ?? 0;
@@ -340,12 +262,6 @@ namespace BoardSpline.Runtime
 
             preferredNormal = preferredNormal == Vector3.zero ? Vector3.up : preferredNormal.normalized;
             var normals = new Vector3[count];
-            if (mode == OrientationMode.FixedNormal)
-            {
-                for (var i = 0; i < count; i++)
-                    normals[i] = preferredNormal;
-                return normals;
-            }
 
             var tangents = new Vector3[count];
             for (var i = 0; i < count; i++)
@@ -368,8 +284,7 @@ namespace BoardSpline.Runtime
             SplineMesh splineMesh,
             Mesh crossSection,
             Vector3 normal,
-            OrientationMode mode,
-            bool applyCustomMeshTransform,
+            int sectionCount,
             Vector3 customRotation,
             Vector3 customOffset,
             Vector3 customScale
@@ -380,12 +295,10 @@ namespace BoardSpline.Runtime
 
             var channel = splineMesh.AddChannel(crossSection, ChannelName);
             channel.type = SplineMesh.Channel.Type.Extrude;
-            channel.count = 1;
+            channel.count = Mathf.Max(1, sectionCount);
             channel.autoCount = false;
-            channel.overrideNormal = mode == OrientationMode.FixedNormal;
+            channel.overrideNormal = false;
             channel.customNormal = normal;
-
-            if (!applyCustomMeshTransform) return;
 
             var definition = channel.GetMesh(0);
             definition.rotation = customRotation;
@@ -395,76 +308,7 @@ namespace BoardSpline.Runtime
 
         private Mesh GetCrossSectionMesh()
         {
-            if (crossSectionSource == CrossSectionSource.CustomMesh && uShapeCrossSection != null)
-                return uShapeCrossSection;
-
-            if (generatedCrossSectionMesh != null)
-                DestroyGeneratedCrossSectionMesh();
-
-            generatedCrossSectionMesh = CreateUShapeCrossSectionMesh(
-                generatedWidth,
-                generatedHeight,
-                generatedWallThickness,
-                generatedSectionLength
-            );
-            return generatedCrossSectionMesh;
-        }
-
-        private void DestroyGeneratedCrossSectionMesh()
-        {
-            if (generatedCrossSectionMesh == null) return;
-
-            if (Application.isPlaying)
-                Destroy(generatedCrossSectionMesh);
-            else
-                DestroyImmediate(generatedCrossSectionMesh);
-
-            generatedCrossSectionMesh = null;
-        }
-
-        private static void AddBox(
-            ICollection<Vector3> vertices,
-            ICollection<int> triangles,
-            float minX,
-            float maxX,
-            float minY,
-            float maxY,
-            float minZ,
-            float maxZ
-        )
-        {
-            var start = vertices.Count;
-            var boxVertices = new[]
-            {
-                new Vector3(minX, minY, minZ),
-                new Vector3(maxX, minY, minZ),
-                new Vector3(maxX, maxY, minZ),
-                new Vector3(minX, maxY, minZ),
-                new Vector3(minX, minY, maxZ),
-                new Vector3(maxX, minY, maxZ),
-                new Vector3(maxX, maxY, maxZ),
-                new Vector3(minX, maxY, maxZ)
-            };
-
-            foreach (var vertex in boxVertices)
-                vertices.Add(vertex);
-
-            AddQuad(triangles, start, 0, 2, 1, 3);
-            AddQuad(triangles, start, 4, 5, 6, 7);
-            AddQuad(triangles, start, 0, 1, 5, 4);
-            AddQuad(triangles, start, 1, 2, 6, 5);
-            AddQuad(triangles, start, 2, 3, 7, 6);
-            AddQuad(triangles, start, 3, 0, 4, 7);
-        }
-
-        private static void AddQuad(ICollection<int> triangles, int start, int a, int b, int c, int d)
-        {
-            triangles.Add(start + a);
-            triangles.Add(start + b);
-            triangles.Add(start + c);
-            triangles.Add(start + a);
-            triangles.Add(start + d);
-            triangles.Add(start + b);
+            return uShapeCrossSection;
         }
 
         private static Vector3 GetPointTangent(IReadOnlyList<Vector3> path, int index, bool isClosed)
@@ -502,6 +346,11 @@ namespace BoardSpline.Runtime
         {
             var count = points?.Count ?? 0;
             return isClosed ? count >= 3 : count >= 2;
+        }
+
+        private static int GetSectionCount(int roundedPathLength, bool isClosed)
+        {
+            return isClosed ? Mathf.Max(1, roundedPathLength) : Mathf.Max(1, roundedPathLength - 1);
         }
 
         private static bool IsCollinearSameDirection(Vector3 incoming, Vector3 outgoing)
