@@ -33,7 +33,7 @@ public class ConveyorEntrance : MonoBehaviour
     [SerializeField] private Color inRangeSpotColor = new(0.2f, 1f, 0.3f, 0.85f);
     [SerializeField] private Color occupiedInRangeColor = new(1f, 0.45f, 0.1f, 0.85f);
     [SerializeField] private Color outOfRangeSpotColor = new(1f, 1f, 1f, 0.2f);
-    private void Update()
+    private void FixedUpdate()
     {
         ProcessActiveDispatchingBall();
     }
