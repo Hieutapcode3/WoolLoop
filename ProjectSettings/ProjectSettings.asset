@@ -823,25 +823,24 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
-    Android: DOTWEEN;UNITY_MCP_READY
-    EmbeddedLinux: DOTWEEN;UNITY_MCP_READY
-    GameCoreScarlett: DOTWEEN;UNITY_MCP_READY
-    GameCoreXboxOne: DOTWEEN;UNITY_MCP_READY
-    Kepler: DOTWEEN;UNITY_MCP_READY
-    LinuxHeadlessSimulation: DOTWEEN;UNITY_MCP_READY
-    Nintendo Switch: DOTWEEN;UNITY_MCP_READY
-    Nintendo Switch 2: DOTWEEN;UNITY_MCP_READY
-    PS4: DOTWEEN;UNITY_MCP_READY
-    PS5: DOTWEEN;UNITY_MCP_READY
-    QNX: DOTWEEN;UNITY_MCP_READY
-    Server: UNITY_MCP_READY
-    Standalone: ODIN_INSPECTOR;ODIN_INSPECTOR_3;ODIN_INSPECTOR_3_1;ODIN_INSPECTOR_3_2;ODIN_INSPECTOR_3_3;DOTWEEN;UNITY_MCP_READY;DREAMTECK_SPLINES
-    VisionOS: DOTWEEN;UNITY_MCP_READY
-    WebGL: DOTWEEN;UNITY_MCP_READY
-    Windows Store Apps: DOTWEEN;UNITY_MCP_READY
-    XboxOne: DOTWEEN;UNITY_MCP_READY
-    iPhone: DOTWEEN;UNITY_MCP_READY
-    tvOS: DOTWEEN;UNITY_MCP_READY
+    Android: DOTWEEN;ODIN_INSPECTOR;ODIN_INSPECTOR_3;ODIN_INSPECTOR_3_1;ODIN_INSPECTOR_3_2;ODIN_INSPECTOR_3_3
+    EmbeddedLinux: DOTWEEN
+    GameCoreScarlett: DOTWEEN
+    GameCoreXboxOne: DOTWEEN
+    Kepler: DOTWEEN
+    LinuxHeadlessSimulation: DOTWEEN
+    Nintendo Switch: DOTWEEN
+    Nintendo Switch 2: DOTWEEN
+    PS4: DOTWEEN
+    PS5: DOTWEEN
+    QNX: DOTWEEN
+    Standalone: ODIN_INSPECTOR;ODIN_INSPECTOR_3;ODIN_INSPECTOR_3_1;ODIN_INSPECTOR_3_2;ODIN_INSPECTOR_3_3;DOTWEEN
+    VisionOS: DOTWEEN
+    WebGL: DOTWEEN
+    Windows Store Apps: DOTWEEN
+    XboxOne: DOTWEEN
+    iPhone: DOTWEEN
+    tvOS: DOTWEEN
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
@@ -938,7 +937,7 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   cloudProjectId: 6958b349-7425-4b1b-8c60-c1019181148c
   framebufferDepthMemorylessMode: 0
