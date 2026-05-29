@@ -42,7 +42,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6727160776883044306}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: -3399578783017842223, guid: 168274fbbdbad364abd74fc3114c62ae, type: 3}
 --- !u!23 &2855085376382066102
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -121,9 +121,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ace9c51ef4f8fd4bb0115931026bc7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  woolColorType: 0
+  woolColorType: 2
   yarnUnitCount: 10
-  colorsParam: {fileID: 11400000, guid: 83ff41e8deb77fd4b8eb9c579ac7104d, type: 2}
   conveyorEntrance: {fileID: 0}
   rollRenderers:
   - {fileID: 2855085376382066102}

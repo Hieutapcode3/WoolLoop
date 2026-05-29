@@ -46,8 +46,17 @@ public class ConveyorExit : MonoBehaviour
         if (!TryFindNearestOccupiedSpot(controller, ExitPosition, spotSearchSlotDistance, out ConveyorSpot spot))
             return;
 
+        YarnItem yarnItem = spot != null ? spot.GetComponentInChildren<YarnItem>() : null;
+        if (yarnItem == null)
+            return;
+
         isBusy = true;
-        TryDestroyYarnItemOnSpot(spot);
+
+        if (TryFillNearestBobbinsConveyor(yarnItem))
+        {
+            TryDestroyYarnItemOnSpot(spot);
+        }
+
         isBusy = false;
     }
     void FindNearestBobbinsConveyor()
@@ -128,6 +137,22 @@ public class ConveyorExit : MonoBehaviour
             Destroy(yarnItem.gameObject);
 
         return true;
+    }
+
+    private bool TryFillNearestBobbinsConveyor(YarnItem yarnItem)
+    {
+        if (nearestBobbinsConveyor == null)
+            FindNearestBobbinsConveyor();
+        if (nearestBobbinsConveyor == null || yarnItem == null)
+            return false;
+        BobbinsBox targetBox = nearestBobbinsConveyor.CurrentBottomLineBobbinsBox;
+        if (targetBox == null || !targetBox.IsBottomLine)
+            return false;
+
+        if (targetBox.CurrentColorType != yarnItem.ColorType)
+            return false;
+
+        return targetBox.TryFillNextSpot(yarnItem);
     }
 
     private ConveyorController ResolveConveyorController()

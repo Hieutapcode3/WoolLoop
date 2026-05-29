@@ -4,8 +4,11 @@ using UnityEngine;
 
 public class YarnItem : MonoBehaviour
 {
+    [TitleGroup("References")]
+    [SerializeField] private Rope ropePref;
+
     [TitleGroup("Color")]
-    [SerializeField] private WoolColorType colorType = WoolColorType.Red;
+    [SerializeField, ReadOnly] private WoolColorType colorType = WoolColorType.Red;
     [SerializeField] private Renderer targetRenderer;
 
     [TitleGroup("Curve Bones")]

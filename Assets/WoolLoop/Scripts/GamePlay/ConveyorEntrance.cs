@@ -97,7 +97,10 @@ public class ConveyorEntrance : MonoBehaviour
         if (!conveyorController.TryFindNearestEmptySpotBySlot(WaitPosition, spotSearchSlotDistance, out ConveyorSpot spot))
             return;
 
-        YarnItem item = Instantiate(yarnItemPrefab, spot.transform);
+        // YarnItem item = Instantiate(yarnItemPrefab, spot.transform);
+        YarnItem item;
+        if (!yarnItemPrefab.Use<YarnItem>(spot.transform, Vector3.zero, Quaternion.identity, out item))
+            return;
         item.transform.localPosition = Vector3.zero;
         item.transform.localRotation = Quaternion.identity;
         item.Initialize(yarnBall.WoolColorType);

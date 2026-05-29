@@ -42,7 +42,6 @@ public class YarnBall : MonoBehaviour
 
     private void HandleClick()
     {
-        Debug.Log($"YarnBall clicked. Color: {woolColorType}, Remaining Units: {yarnUnitCount}");
         if (conveyorEntrance == null)
             conveyorEntrance = FindFirstObjectByType<ConveyorEntrance>();
 

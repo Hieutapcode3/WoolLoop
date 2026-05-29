@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using Unity.VisualScripting;
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -20,6 +22,7 @@ public class BobbinsConveyor : MonoBehaviour
     [SerializeField] private GameObject bobbinsPrefab;
     [TitleGroup("Layout")]
     [SerializeField, Min(0.01f)] private float conveyorScale = 1f;
+    // [OnValueChanged(nameof(RefreshLayout))]
     [SerializeField, Min(0.01f)] private float spacingZ = 0.15f;
     [SerializeField, Min(1)] private int visibleCount = 4;
     [SerializeField] private Transform boxSpawnRoot;
@@ -31,18 +34,28 @@ public class BobbinsConveyor : MonoBehaviour
     [SerializeField] private List<BobbinsBoxSetUp> bobbinsConfig = new();
     private readonly List<BobbinsBoxSetUp> _spawnOrder = new();
     private readonly List<GameObject> _allBobbins = new();
+    [SerializeField, ReadOnly] private BobbinsBox currentBottomLineBobbinsBox;
+    public BobbinsBox CurrentBottomLineBobbinsBox => currentBottomLineBobbinsBox;
     private bool _isRefreshing;
 
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        if (PrefabUtility.IsPartOfPrefabAsset(this) || !Application.isPlaying)
+        if (PrefabUtility.IsPartOfPrefabAsset(this))
             return;
-
-        RefreshLayout();
+        if (!Application.isPlaying)
+        {
+            UpdateExistingLayoutInEditMode();
+        }
     }
 #endif
+    private void OnEnable()
+    {
+        if (!Application.isPlaying)
+            return;
 
+        Rebuild();
+    }
     [Button(ButtonSizes.Large)]
     public void Rebuild()
     {
@@ -66,6 +79,20 @@ public class BobbinsConveyor : MonoBehaviour
         {
             _isRefreshing = false;
         }
+    }
+
+    private void UpdateExistingLayoutInEditMode()
+    {
+        if (bobbinsPrefab == null)
+            return;
+
+        BuildOrder();
+
+        if (_allBobbins.Count == 0)
+            CacheExistingChildren();
+
+        for (int i = 0; i < _allBobbins.Count && i < _spawnOrder.Count; i++)
+            UpdateInstance(i);
     }
 
     private void SyncInstances(bool forceRebuild)
@@ -95,11 +122,6 @@ public class BobbinsConveyor : MonoBehaviour
     {
         int index = _allBobbins.Count;
         GameObject bobbins = Instantiate(bobbinsPrefab, boxSpawnRoot);
-        if (bobbins.TryGetComponent(out BobbinsBox bobbinsBox))
-        {
-            var setup = _spawnOrder[index];
-            bobbinsBox.InitBobbinsBox(setup.boxColorType, setup.boxSize, open: index < visibleCount, bottomLine: index == 0);
-        }
         _allBobbins.Add(bobbins);
     }
 
@@ -117,7 +139,20 @@ public class BobbinsConveyor : MonoBehaviour
         if (bobbins.TryGetComponent(out BobbinsBox bobbinsBox))
         {
             var boxIndex = _spawnOrder[index];
-            bobbinsBox.InitBobbinsBox(boxIndex.boxColorType, boxIndex.boxSize, open: index < visibleCount, bottomLine: index == 0);
+            bool isBottomLine = index == 0;
+
+            if (Application.isPlaying)
+            {
+                bobbinsBox.InitBobbinsBox(boxIndex.boxColorType, boxIndex.boxSize, bottomLine: isBottomLine);
+                if (isBottomLine)
+                    currentBottomLineBobbinsBox = bobbinsBox;
+            }
+            else
+            {
+                bobbinsBox.ApplyEditModePreview(boxIndex.boxColorType, boxIndex.boxSize, bottomLine: isBottomLine);
+                if (isBottomLine)
+                    currentBottomLineBobbinsBox = bobbinsBox;
+            }
         }
 
         bobbins.SetActive(index < visibleCount);
@@ -167,7 +202,7 @@ public class BobbinsConveyor : MonoBehaviour
                 _allBobbins.RemoveAt(i);
         }
 
-        if (_allBobbins.Count == 0 && boxSpawnRoot.childCount > 0)
+        if (_allBobbins.Count == 0 && boxSpawnRoot != null && boxSpawnRoot.childCount > 0)
         {
             for (int i = 0; i < boxSpawnRoot.childCount; i++)
             {
@@ -175,6 +210,20 @@ public class BobbinsConveyor : MonoBehaviour
                 if (child != null)
                     _allBobbins.Add(child.gameObject);
             }
+        }
+    }
+
+    private void CacheExistingChildren()
+    {
+        if (boxSpawnRoot == null)
+            return;
+
+        _allBobbins.Clear();
+        for (int i = 0; i < boxSpawnRoot.childCount; i++)
+        {
+            Transform child = boxSpawnRoot.GetChild(i);
+            if (child != null)
+                _allBobbins.Add(child.gameObject);
         }
     }
     private void BuildOrder()
@@ -206,6 +255,7 @@ public class BobbinsConveyor : MonoBehaviour
         RecycleAll();
         _allBobbins.Clear();
         _spawnOrder.Clear();
+        currentBottomLineBobbinsBox = null;
     }
     private void RecycleAll()
     {
