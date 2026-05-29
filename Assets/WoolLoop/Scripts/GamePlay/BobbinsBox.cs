@@ -25,7 +25,6 @@ public class BobbinsBox : MonoBehaviour
     private int spotCount;
     [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
     private Renderer[] targetRenderers;
-    [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
     private Transform[] builtSpots;
     [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
     private bool isOpen;
@@ -36,7 +35,6 @@ public class BobbinsBox : MonoBehaviour
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int ColorId = Shader.PropertyToID("_Color");
     private MaterialPropertyBlock propertyBlock;
-
     public WoolColorType CurrentColorType => currentColorType;
     public bool IsOpen => isOpen;
     public bool IsBottomLine => isBottomLine;
@@ -65,6 +63,7 @@ public class BobbinsBox : MonoBehaviour
         currentColorType = colorType;
         boxSize = size;
         isOpen = open;
+        BuildSpotsForSize();
         isBottomLine = bottomLine;
         ApplyColorToMaterials();
     }
@@ -106,10 +105,19 @@ public class BobbinsBox : MonoBehaviour
                 spot.SetParent(boxSpotParent, false);
 
             spot.localPosition = localPos;
-            // spot.localRotation = Quaternion.identity;
             spot.localScale = Vector3.one;
             spot.name = $"Spot_{i:00}";
             builtSpots[i] = spot;
+        }
+        SetVisibleForSpot();
+    }
+    void SetVisibleForSpot()
+    {
+        foreach (Transform spot in builtSpots)
+        {
+            if (spot == null)
+                continue;
+            spot.gameObject.SetActive(isBottomLine);
         }
     }
 
@@ -140,20 +148,6 @@ public class BobbinsBox : MonoBehaviour
                 depth * 0.5f - row * spacingZ);
         }
     }
-
-    private int ResolveSpotCountFromSize(BobbinsBoxSize size)
-    {
-        return size switch
-        {
-            BobbinsBoxSize.Size_2 => 2,
-            BobbinsBoxSize.Size_4 => 4,
-            BobbinsBoxSize.Size_6 => 6,
-            BobbinsBoxSize.Size_8 => 8,
-            BobbinsBoxSize.Size_10 => 10,
-            _ => 8,
-        };
-    }
-
     private void EnsureSpotRoot()
     {
         if (boxSpotParent != null)
