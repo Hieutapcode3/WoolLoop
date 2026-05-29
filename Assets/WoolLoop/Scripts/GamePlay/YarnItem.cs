@@ -6,10 +6,9 @@ public class YarnItem : MonoBehaviour
 {
     [TitleGroup("References")]
     [SerializeField] private Rope ropePref;
-
-    [TitleGroup("Color")]
-    [SerializeField, ReadOnly] private WoolColorType colorType = WoolColorType.Red;
     [SerializeField] private Renderer targetRenderer;
+    [TitleGroup("Parameters")]
+    [SerializeField] private float timeDissolve = 0.1f;
 
     [TitleGroup("Curve Bones")]
     [SerializeField] private Transform boneUp;
@@ -22,6 +21,8 @@ public class YarnItem : MonoBehaviour
 
     [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
     private ConveyorSpot parentSpot;
+    [SerializeField, ReadOnly] private WoolColorType colorType = WoolColorType.Red;
+
 
     private MaterialPropertyBlock propertyBlock;
     private Vector3 boneUpOriginalScale = Vector3.one;
@@ -128,5 +129,16 @@ public class YarnItem : MonoBehaviour
 
         slot?.Kill();
         slot = bone.DOScale(targetScale, boneScaleDuration).SetEase(Ease.OutQuad);
+    }
+    public void SpawnRopePiece(Transform startpoint, Transform endpoint)
+    {
+        if (ropePref == null || startpoint == null || endpoint == null)
+            return;
+
+        Rope rope;
+        if (!ropePref.Use<Rope>(transform.parent, Vector3.zero, Quaternion.identity, out rope))
+            return;
+        rope.SetStartPoint(startpoint);
+        rope.SetEndPoint(endpoint);
     }
 }

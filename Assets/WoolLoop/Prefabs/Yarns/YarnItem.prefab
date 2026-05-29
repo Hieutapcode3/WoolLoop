@@ -142,6 +142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1286794178dcc974da18d16ea3e21d7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ropePref: {fileID: 9145444866835479050, guid: a5b90ad0a368ab14a892a05b4fb2ea36, type: 3}
   colorType: 0
   targetRenderer: {fileID: 9196358836349909433}
   boneUp: {fileID: 1715319748444207108}
