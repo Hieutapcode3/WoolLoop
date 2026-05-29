@@ -111,6 +111,11 @@
             ]
         }
     ],
+    "hasTargetExitTileId": true,
+    "targetExitTileId": {
+        "x": 3,
+        "y": 6
+    },
     "boardSetting": {
         "centerPos": {
             "x": 0.0,

@@ -20,6 +20,8 @@ public partial class YarnBoardEditorWindow
         if (_currentLevel.tileData == null || _currentLevel.tileData.Length != expectedTiles)
             _validationErrors.Add("Tile data does not match board size.");
 
+        ValidateTargetExitCell();
+
         int colorCount = GetColorCount();
         Dictionary<Vector2Int, WoolBallData> occupiedCells = new Dictionary<Vector2Int, WoolBallData>();
 
@@ -38,6 +40,26 @@ public partial class YarnBoardEditorWindow
 
             foreach (Vector2Int child in ball.childrenTileIds)
                 ValidateBallCell(ball, child, occupiedCells, false);
+        }
+    }
+
+    private void ValidateTargetExitCell()
+    {
+        if (_currentLevel == null || !_currentLevel.hasTargetExitTileId)
+            return;
+
+        Vector2Int target = _currentLevel.targetExitTileId;
+        if (!IsInsideBoard(target))
+        {
+            _validationErrors.Add($"Target exit tile is outside board at ({target.x}, {target.y}).");
+            _errorCells.Add(target);
+            return;
+        }
+
+        if (!IsActiveCell(target))
+        {
+            _validationErrors.Add($"Target exit tile is inactive at ({target.x}, {target.y}).");
+            _errorCells.Add(target);
         }
     }
 
