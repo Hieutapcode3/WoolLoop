@@ -13,7 +13,7 @@ public partial class YarnBoardEditorWindow : EditorWindow
     private const float NarrowLayoutThreshold = 1080f;
     private const string UxmlPath = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/UXML/YarnBoardEditorWindow.uxml";
     private const string UssPath = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/USS/YarnBoardEditorWindow.uss";
-    private const string DefaultLevelFolder = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/Levels";
+    private const string DefaultLevelFolder = "Assets/Resources/Levels";
 
     private enum EditorToolMode
     {
@@ -30,7 +30,6 @@ public partial class YarnBoardEditorWindow : EditorWindow
         public Vector2Int size = new Vector2Int(8, 8);
         public bool[] tileData = new bool[64];
         public List<WoolBallData> yarnBalls = new List<WoolBallData>();
-        public List<WoolBallData> blockData = new List<WoolBallData>();
         public GlobalYarnBoardSetting boardSetting = new GlobalYarnBoardSetting
         {
             centerPos = Vector3.zero,
@@ -44,9 +43,6 @@ public partial class YarnBoardEditorWindow : EditorWindow
             {
                 if (yarnBalls == null)
                     yarnBalls = new List<WoolBallData>();
-                if ((yarnBalls.Count == 0) && blockData != null && blockData.Count > 0)
-                    yarnBalls = blockData;
-                blockData = yarnBalls;
                 return yarnBalls;
             }
         }
@@ -323,6 +319,5 @@ public partial class YarnBoardEditorWindow : EditorWindow
 
         if (_currentLevel.boardSetting == null)
             _currentLevel.boardSetting = new GlobalYarnBoardSetting();
-        _currentLevel.blockData = _currentLevel.Balls;
     }
 }

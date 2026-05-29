@@ -23,7 +23,6 @@ public partial class YarnBoardEditorWindow
         for (int i = 0; i < level.tileData.Length; i++)
             level.tileData[i] = true;
 
-        level.blockData = level.yarnBalls;
         return level;
     }
 
@@ -106,7 +105,6 @@ public partial class YarnBoardEditorWindow
             return;
         }
 
-        _currentLevel.blockData = _currentLevel.Balls;
         string fullPath = Path.GetFullPath(projectPath);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
         File.WriteAllText(fullPath, JsonUtility.ToJson(_currentLevel, true));

@@ -16,6 +16,9 @@ public class PrefabProfile : ScriptableObject
     [SerializeField] private GameObject woolBallPrefab;
     public static GameObject WoolBallPrefab => asset.Value.woolBallPrefab;
 
+    [SerializeField] private Material woolBallMaterial;
+    public static Material WoolBallMaterial => asset.Value.woolBallMaterial;
+
     [SerializeField] private Material wallMaterial;
     public static Material WallMaterial => asset.Value.wallMaterial;
 

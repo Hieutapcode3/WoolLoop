@@ -11,7 +11,7 @@ public class YarnBoardData : ScriptableObject
 
     public Vector2Int size;
     public bool[] tileData;
-    public List<WoolBallData> blockData;
+    public List<WoolBallData> yarnBalls;
     #endregion
 
     #region Properties

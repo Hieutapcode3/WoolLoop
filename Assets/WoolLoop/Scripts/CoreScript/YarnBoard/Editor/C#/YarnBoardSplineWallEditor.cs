@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using BoardSpline.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -6,7 +5,7 @@ using UnityEngine;
 
 public static class YarnBoardSplineWallEditor
 {
-    private const string LevelPath = "Assets/WoolLoop/Scripts/CoreScript/YarnBoard/Editor/Levels/Level_001.json";
+    private const string LevelPath = "Assets/Resources/Levels/Level_001.json";
     private const string WallObjectName = "Level_001_DreamteckSplineWall";
     private const string ObstacleContainerName = "Blocked Obstacles";
 
@@ -40,32 +39,19 @@ public static class YarnBoardSplineWallEditor
         var renderer = wall.AddComponent<MeshRenderer>();
         renderer.sharedMaterial = PrefabProfile.WallMaterial;
 
-        var boardSetting = level.boardSetting ?? new GlobalYarnBoardSetting();
-        var cellSize = boardSetting.cellSpacing > 0f ? boardSetting.cellSpacing : boardSetting.cellSize;
-        if (cellSize <= 0f) cellSize = 1f;
-
-        var adapter = new BoardSplineDataAdapterInfo
-        {
-            size = level.size,
-            tileData = level.tileData,
-            cellSize = cellSize,
-            origin = boardSetting.centerPos,
-            right = Vector3.right,
-            forward = Vector3.forward,
-            centerBoardOnOrigin = true,
-        };
+        var adapter = YarnBoardLevelUtility.CreateAdapter(level);
 
         var settings = BoardSplineSettings.Default;
         var buildData = BoardSplineAnalyzer.Analyze(adapter);
 
-        var outerRegion = GetLargestRegion(buildData.BorderPointRegions);
+        var outerRegion = YarnBoardLevelUtility.GetLargestRegion(buildData.BorderPointRegions);
         if (outerRegion == null || outerRegion.Count == 0)
         {
             Debug.LogWarning("No border points found for the wall.");
             return;
         }
 
-        var borderPath = CreateBorderPath(outerRegion, settings);
+        var borderPath = YarnBoardLevelUtility.CreateBorderPath(outerRegion, settings);
         if (borderPath.Length < 3)
         {
             Debug.LogWarning("Not enough border points to build the wall spline.");
@@ -110,7 +96,7 @@ public static class YarnBoardSplineWallEditor
             for (var x = 0; x < level.size.x; x++)
             {
                 var cell = new Vector2Int(x, y);
-                if (!IsBlockedEmptyCell(level, cell)) continue;
+                if (!YarnBoardLevelUtility.IsBlockedEmptyCell(level, cell)) continue;
 
                 var instance = PrefabUtility.InstantiatePrefab(PrefabProfile.ObstaclePrefab) as GameObject;
                 if (instance == null) continue;
@@ -122,69 +108,4 @@ public static class YarnBoardSplineWallEditor
         }
     }
 
-    private static bool IsBlockedEmptyCell(LevelData level, Vector2Int cell)
-    {
-        if (level == null || level.IsActive(cell)) return false;
-
-        return HasActiveInDirection(level, cell, Vector2Int.up)
-            && HasActiveInDirection(level, cell, Vector2Int.down)
-            && HasActiveInDirection(level, cell, Vector2Int.left)
-            && HasActiveInDirection(level, cell, Vector2Int.right);
-    }
-
-    private static bool HasActiveInDirection(LevelData level, Vector2Int start, Vector2Int dir)
-    {
-        var current = start + dir;
-
-        while (level.IsInside(current))
-        {
-            if (level.IsActive(current))
-                return true;
-
-            current += dir;
-        }
-
-        return false;
-    }
-
-    private static List<BoardSplineBorderPoint> GetLargestRegion(
-        IReadOnlyList<List<BoardSplineBorderPoint>> regions
-    )
-    {
-        if (regions == null || regions.Count == 0) return null;
-
-        List<BoardSplineBorderPoint> result = null;
-        var largestCount = -1;
-        for (var i = 0; i < regions.Count; i++)
-        {
-            if (regions[i] == null || regions[i].Count <= largestCount) continue;
-
-            largestCount = regions[i].Count;
-            result = regions[i];
-        }
-
-        return result;
-    }
-
-    private static Vector3[] CreateBorderPath(
-        IReadOnlyList<BoardSplineBorderPoint> borderPoints,
-        BoardSplineSettings settings
-    )
-    {
-        if (borderPoints == null || borderPoints.Count == 0) return new Vector3[0];
-
-        var borderOffset = GetNormal(settings) * settings.wallHeight * 0.5f;
-        var rawPoints = new Vector3[borderPoints.Count];
-        for (var i = 0; i < borderPoints.Count; i++)
-        {
-            rawPoints[i] = borderPoints[i].Position
-                         + borderOffset
-                         + borderPoints[i].EmptyDirection * settings.borderPadding;
-        }
-
-        return rawPoints;
-    }
-
-    private static Vector3 GetNormal(BoardSplineSettings settings) =>
-        settings.splineNormal == Vector3.zero ? Vector3.up : settings.splineNormal.normalized;
 }

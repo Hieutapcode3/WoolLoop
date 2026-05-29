@@ -5,10 +5,18 @@ using UnityEngine;
 
 public class BottomBoardFactory : IFactory<BottomBoard>
 {
-    public GlobalYarnBoardSetting globalYarnBoardSetting;
-
     public UniTask<BottomBoard> Create(ICreateParameters parameters, CancellationToken cancellationToken = default)
     {
-        throw new System.NotImplementedException();
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (parameters is not BottomBoardCreateParameters createParameters)
+            throw new System.ArgumentException($"Expected {nameof(BottomBoardCreateParameters)}.", nameof(parameters));
+
+        var boardObject = new GameObject("BottomBoard");
+        boardObject.transform.SetParent(createParameters.Parent, false);
+
+        var board = boardObject.AddComponent<BottomBoard>();
+        board.OnCreated(createParameters);
+        return UniTask.FromResult(board);
     }
 }

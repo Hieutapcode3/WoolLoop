@@ -111,62 +111,6 @@
             ]
         }
     ],
-    "blockData": [
-        {
-            "BallId": 3,
-            "ColorId": 2,
-            "tileId": {
-                "x": 3,
-                "y": 2
-            },
-            "childrenTileIds": [
-                {
-                    "x": 4,
-                    "y": 2
-                },
-                {
-                    "x": 5,
-                    "y": 2
-                }
-            ]
-        },
-        {
-            "BallId": 5,
-            "ColorId": 0,
-            "tileId": {
-                "x": 2,
-                "y": 1
-            },
-            "childrenTileIds": [
-                {
-                    "x": 2,
-                    "y": 2
-                },
-                {
-                    "x": 1,
-                    "y": 2
-                }
-            ]
-        },
-        {
-            "BallId": 6,
-            "ColorId": 1,
-            "tileId": {
-                "x": 3,
-                "y": 4
-            },
-            "childrenTileIds": [
-                {
-                    "x": 2,
-                    "y": 4
-                },
-                {
-                    "x": 2,
-                    "y": 5
-                }
-            ]
-        }
-    ],
     "boardSetting": {
         "centerPos": {
             "x": 0.0,
