@@ -4,6 +4,8 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "WoolLoop/Color Param", fileName = "WoolColorsParam")]
 public class ColorsParamSO : ScriptableObject
 {
+    private const string ITEM_RESOURCE_FOLDER_PATH = "Data/WoolColorsParam";
+    private static ResourceAsset<ColorsParamSO> asset = new(ITEM_RESOURCE_FOLDER_PATH);
     [Serializable]
     public struct ColorEntry
     {
@@ -11,8 +13,7 @@ public class ColorsParamSO : ScriptableObject
         public Color displayColor;
     }
 
-    [SerializeField]
-    private ColorEntry[] setup =
+    private static readonly ColorEntry[] DefaultSetup =
     {
         new() { woolColor = WoolColorType.Red, displayColor = new Color(0.88f, 0.08f, 0.07f) },
         new() { woolColor = WoolColorType.Green, displayColor = new Color(0.16f, 0.64f, 0.25f) },
@@ -25,6 +26,9 @@ public class ColorsParamSO : ScriptableObject
         new() { woolColor = WoolColorType.White, displayColor = new Color(1.00f, 1.00f, 1.00f) },
         new() { woolColor = WoolColorType.Black, displayColor = new Color(0.06f, 0.07f, 0.07f) }
     };
+
+    [SerializeField]
+    private ColorEntry[] setup = (ColorEntry[])DefaultSetup.Clone();
 
     private Color[] _cachedPalette;
     public int ColorCount => setup != null ? setup.Length : 0;
@@ -59,18 +63,37 @@ public class ColorsParamSO : ScriptableObject
         return true;
     }
 
-    public Color GetColor(WoolColorType t)
+    public static int Count()
     {
-        if (setup == null)
+        ColorsParamSO param = asset.Value;
+        return param != null ? param.ColorCount : DefaultSetup.Length;
+    }
+
+    public static Color GetColor(WoolColorType t)
+    {
+        ColorsParamSO param = asset.Value;
+        ColorEntry[] entries = param != null ? param.setup : DefaultSetup;
+        if (entries != null)
+        {
+            for (int i = 0; i < entries.Length; i++)
+            {
+                if (entries[i].woolColor == t)
+                    return entries[i].displayColor;
+            }
+        }
+        return Color.white;
+    }
+
+    public static Color GetColorByPaletteIndex(int index)
+    {
+        ColorsParamSO param = asset.Value;
+        if (param != null && param.TryGetColorByPaletteIndex(index, out _, out Color displayColor))
+            return displayColor;
+
+        if (index < 0 || index >= DefaultSetup.Length)
             return Color.white;
 
-        for (int i = 0; i < setup.Length; i++)
-        {
-            if (setup[i].woolColor == t)
-                return setup[i].displayColor;
-        }
-
-        return Color.white;
+        return DefaultSetup[index].displayColor;
     }
 
     private void OnValidate()
