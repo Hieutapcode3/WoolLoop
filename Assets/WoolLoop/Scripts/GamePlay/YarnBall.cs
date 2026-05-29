@@ -10,7 +10,6 @@ public class YarnBall : MonoBehaviour
     [TitleGroup("Yarn")]
     [SerializeField] private WoolColorType woolColorType = WoolColorType.Red;
     [SerializeField, Min(1)][HideInInspector] private int yarnUnitCount = 10;
-    [SerializeField, Required] private ColorsParamSO colorsParam;
     [TitleGroup("Conveyor")]
     [SerializeField] private ConveyorEntrance conveyorEntrance;
     [TitleGroup("Visual")]
@@ -24,7 +23,6 @@ public class YarnBall : MonoBehaviour
     private Tween moveTween;
 
     public WoolColorType WoolColorType => woolColorType;
-    public ColorsParamSO ColorsParam => colorsParam;
     public int YarnUnitCount => yarnUnitCount;
     public bool HasYarnRemaining => yarnUnitCount > 0;
     public bool IsMovingToEntrance => isMovingToEntrance;
@@ -36,8 +34,15 @@ public class YarnBall : MonoBehaviour
         ApplyColorToRoll();
     }
 
+
     private void OnMouseDown()
     {
+        HandleClick();
+    }
+
+    private void HandleClick()
+    {
+        Debug.Log($"YarnBall clicked. Color: {woolColorType}, Remaining Units: {yarnUnitCount}");
         if (conveyorEntrance == null)
             conveyorEntrance = FindFirstObjectByType<ConveyorEntrance>();
 
@@ -96,8 +101,7 @@ public class YarnBall : MonoBehaviour
     private void OnValidate()
     {
         yarnUnitCount = Mathf.Max(1, yarnUnitCount);
-        if (colorsParam != null)
-            ApplyColorToRoll();
+        ApplyColorToRoll();
     }
 #endif
 
@@ -110,11 +114,8 @@ public class YarnBall : MonoBehaviour
 
     private void ApplyColorToRoll()
     {
-        if (colorsParam == null)
-            return;
-
         EnsureRollRenderers();
-        Color color = colorsParam.GetColor(woolColorType);
+        Color color = ColorsParamSO.GetColor(woolColorType);
         propertyBlock ??= new MaterialPropertyBlock();
         foreach (Renderer renderer in rollRenderers)
             ApplyColorWithPropertyBlock(renderer, color, propertyBlock);

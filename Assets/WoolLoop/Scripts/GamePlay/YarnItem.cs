@@ -36,11 +36,10 @@ public class YarnItem : MonoBehaviour
         parentSpot = spot;
         CacheBoneOriginalScales();
     }
-    public void Initialize(WoolColorType type, ColorsParamSO colorsParam)
+    public void Initialize(WoolColorType type)
     {
         colorType = type;
-        if (colorsParam != null)
-            SetDisplayColor(colorsParam.GetColor(colorType));
+        SetDisplayColor(ColorsParamSO.GetColor(colorType));
         CacheBoneOriginalScales();
     }
     public void SetColorType(WoolColorType type) => colorType = type;
