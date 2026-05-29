@@ -1,7 +1,14 @@
+using System.Threading;
+using Common;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-public class BottomBoardFactory : MonoBehaviour
+public class BottomBoardFactory : IFactory<BottomBoard>
 {
     public GlobalYarnBoardSetting globalYarnBoardSetting;
-    public YarnBoardData yarnBoardData;
+
+    public UniTask<BottomBoard> Create(ICreateParameters parameters, CancellationToken cancellationToken = default)
+    {
+        throw new System.NotImplementedException();
+    }
 }
