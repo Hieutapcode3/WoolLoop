@@ -14,6 +14,7 @@ public class LevelSpawner : MonoBehaviour
     private readonly BottomBoardFactory bottomBoardFactory = new();
     private readonly WoolBallFactory woolBallFactory = new();
     private GameObject currentLevelRoot;
+    private YarnBoardRuntimeState runtimeState;
     private CancellationTokenSource spawnCancellation;
 
     private void Start()
@@ -38,7 +39,11 @@ public class LevelSpawner : MonoBehaviour
 
     public void ClearLevel()
     {
-        if (currentLevelRoot == null) return;
+        if (currentLevelRoot == null)
+        {
+            runtimeState = null;
+            return;
+        }
 
         if (Application.isPlaying)
             Destroy(currentLevelRoot);
@@ -46,6 +51,7 @@ public class LevelSpawner : MonoBehaviour
             DestroyImmediate(currentLevelRoot);
 
         currentLevelRoot = null;
+        runtimeState = null;
     }
 
     private async UniTask SpawnLevelInternalAsync(int targetIndex, CancellationToken externalToken)
@@ -69,6 +75,7 @@ public class LevelSpawner : MonoBehaviour
         currentLevelRoot.transform.SetParent(parent, false);
 
         var adapter = YarnBoardLevelUtility.CreateAdapter(level);
+        runtimeState = new YarnBoardRuntimeState(level, adapter);
 
         token.ThrowIfCancellationRequested();
         await bottomBoardFactory.Create(new BottomBoardCreateParameters(level, adapter, currentLevelRoot.transform), token);
@@ -81,7 +88,7 @@ public class LevelSpawner : MonoBehaviour
             var ballData = level.yarnBalls[i];
             if (ballData == null) continue;
 
-            await woolBallFactory.Create(new WoolBallCreateParameters(ballData, adapter, currentLevelRoot.transform), token);
+            await woolBallFactory.Create(new WoolBallCreateParameters(ballData, adapter, currentLevelRoot.transform, runtimeState), token);
         }
     }
 
