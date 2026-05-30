@@ -109,32 +109,6 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable
         }
     }
 
-    public async UniTask<bool> MoveToNearestExit()
-    {
-        if (!TryCreateNearestExitMovePlan(out var plan))
-            return false;
-
-        if (!TryBeginMove(plan))
-            return false;
-
-        try
-        {
-            await PlayMove(plan);
-            CommitMove(plan.FinalTiles);
-            return true;
-        }
-        catch (OperationCanceledException)
-        {
-            return false;
-        }
-        finally
-        {
-            runtimeState.ReleaseReservation(this, plan.Target);
-            IsMoving = false;
-            SetInteractionCollidersEnabled(!IsCompleted);
-        }
-    }
-
     public UniTask<bool> MoveToTarget()
     {
         if (runtimeState?.Level == null || !runtimeState.Level.hasTargetExitTileId)
