@@ -20,6 +20,7 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
     private const float VisualHeightOffset = .3f;
 
     [SerializeField, Min(0f)] private float stepDuration = 0.12f;
+    [SerializeField, Min(1)] private int yarnUnitsPerTile = 1;
 
     private YarnBoardRuntimeState runtimeState;
     private ConveyorEntrance conveyorEntrance;
@@ -40,17 +41,25 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
     public bool IsMovingIntoEntrance => isMovingIntoEntrance;
     public bool IsDispatchingAtWait => isDispatchingAtWait;
     public int ColorId => Data != null ? Data.ColorId : 0;
-    public int YarnUnitCount =>
-        isMovingIntoEntrance || isDispatchingAtWait ? remainingYarnUnits : Mathf.Max(remainingYarnUnits, GetTiles().Count);
+    public int YarnUnitsPerTile
+    {
+        get => Mathf.Max(1, yarnUnitsPerTile);
+        set => yarnUnitsPerTile = Mathf.Max(1, value);
+    }
+    public int YarnUnitCount => IsCompleted || IsPendingCleanup
+        ? 0
+        : (IsDispatchActive ? remainingYarnUnits : CalculateTotalYarnUnits());
     public bool HasYarnRemaining =>
-        isMovingIntoEntrance || isDispatchingAtWait
+        IsDispatchActive
             ? remainingYarnUnits > 0
-            : !IsCompleted && !IsPendingCleanup && GetTiles().Count > 0;
+            : !IsCompleted && !IsPendingCleanup && CalculateTotalYarnUnits() > 0;
     public float StepDuration
     {
         get => stepDuration;
         set => stepDuration = Mathf.Max(0f, value);
     }
+
+    private bool IsDispatchActive => isMovingIntoEntrance || isDispatchingAtWait;
 
     public event Action<WoolBall> OnCompleted;
 
@@ -139,7 +148,7 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
             return;
 
         conveyorEntrance = entrance;
-        remainingYarnUnits = Mathf.Max(0, GetTiles().Count);
+        InitializeDispatchYarnUnits(true);
         if (remainingYarnUnits <= 0)
             return;
 
@@ -147,37 +156,41 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
         isMovingIntoEntrance = true;
         SetInteractionCollidersEnabled(false);
 
-        entranceTween = transform
-            .DOMove(waitPosition, duration)
-            .SetEase(Ease.OutQuad)
-            .OnComplete(() =>
-            {
-                isMovingIntoEntrance = false;
-                entrance.OnWoolBallArrived(this);
-            });
+        PlayMoveIntoConveyorEntrance(entrance, waitPosition, duration).Forget();
     }
 
     public void BeginDispatchAtWait(Vector3 waitPosition)
     {
-        if (remainingYarnUnits <= 0)
-            remainingYarnUnits = Mathf.Max(0, GetTiles().Count);
+        InitializeDispatchYarnUnits(false);
 
         isMovingIntoEntrance = false;
         isDispatchingAtWait = true;
         entranceTween?.Kill();
         transform.position = waitPosition;
+        if (Visual != null)
+        {
+            var pieces = Visual.PieceTransforms;
+            for (var i = 0; i < pieces.Count; i++)
+            {
+                if (pieces[i] != null)
+                    pieces[i].position = waitPosition;
+            }
+        }
     }
 
     public void ConsumeOneYarnUnit()
     {
-        if (remainingYarnUnits <= 0 && !isDispatchingAtWait)
-            remainingYarnUnits = Mathf.Max(0, GetTiles().Count);
+        if (IsCompleted || IsPendingCleanup)
+            return;
+
+        InitializeDispatchYarnUnits(false);
 
         if (remainingYarnUnits <= 0)
             return;
 
         remainingYarnUnits = Mathf.Max(0, remainingYarnUnits - 1);
-        Visual?.HideNextVisiblePiece();
+        if (remainingYarnUnits % YarnUnitsPerTile == 0)
+            Visual?.HideNextVisiblePiece();
     }
 
     public void Complete()
@@ -270,14 +283,16 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
             return false;
 
         var root = tiles[0];
-        var rootPathFound = runtimeState.TryFindPath(this, root, target, out var rootPath);
+        var rootBlockedTiles = CreateOwnBodyBlockedTiles(tiles, root);
+        var rootPathFound = runtimeState.TryFindPath(this, root, target, rootBlockedTiles, out var rootPath);
         var tailPathFound = false;
         List<Vector2Int> tailPath = null;
 
         if (tiles.Count > 1)
         {
             var tail = tiles[^1];
-            tailPathFound = runtimeState.TryFindPath(this, tail, target, out tailPath);
+            var tailBlockedTiles = CreateOwnBodyBlockedTiles(tiles, tail);
+            tailPathFound = runtimeState.TryFindPath(this, tail, target, tailBlockedTiles, out tailPath);
         }
 
         if (!rootPathFound && !tailPathFound)
@@ -287,6 +302,21 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
         var path = useRoot ? rootPath : tailPath;
         plan = CreateMovePlan(target, useRoot, path, tiles);
         return plan != null;
+    }
+
+    private static HashSet<Vector2Int> CreateOwnBodyBlockedTiles(IReadOnlyList<Vector2Int> tiles, Vector2Int endpoint)
+    {
+        var blocked = new HashSet<Vector2Int>();
+        if (tiles == null)
+            return blocked;
+
+        for (var i = 0; i < tiles.Count; i++)
+        {
+            if (tiles[i] != endpoint)
+                blocked.Add(tiles[i]);
+        }
+
+        return blocked;
     }
 
     private bool TryCreateNearestExitMovePlan(out MovePlan plan)
@@ -380,6 +410,89 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
         }
     }
 
+    private async UniTaskVoid PlayMoveIntoConveyorEntrance(ConveyorEntrance entrance, Vector3 waitPosition, float duration)
+    {
+        try
+        {
+            var frames = CreateWorldSnakeFrames(waitPosition);
+            var frameDuration = duration > 0f ? duration : stepDuration;
+
+            if (frames.Count <= 1 || frameDuration <= 0f)
+            {
+                transform.position = waitPosition;
+            }
+            else
+            {
+                for (var frameIndex = 1; frameIndex < frames.Count; frameIndex++)
+                {
+                    var sequence = Visual.CreateWorldMoveTween(frames[frameIndex], frameDuration);
+                    entranceTween = sequence;
+                    await AwaitTween(sequence, this.GetCancellationTokenOnDestroy());
+                    entranceTween = null;
+                }
+            }
+
+            if (IsCompleted || IsPendingCleanup)
+                return;
+
+            isMovingIntoEntrance = false;
+            entrance.OnWoolBallArrived(this);
+        }
+        catch (OperationCanceledException)
+        {
+            isMovingIntoEntrance = false;
+        }
+    }
+
+    private List<List<Vector3>> CreateWorldSnakeFrames(Vector3 waitPosition)
+    {
+        var frames = new List<List<Vector3>>();
+        var current = Visual != null ? Visual.GetPieceWorldPositions() : new List<Vector3>();
+        if (current.Count == 0)
+            return frames;
+
+        frames.Add(new List<Vector3>(current));
+
+        var rootDistance = Vector3.Distance(current[0], waitPosition);
+        var tailDistance = Vector3.Distance(current[^1], waitPosition);
+        var fromRootEndpoint = rootDistance <= tailDistance;
+        var endpoint = fromRootEndpoint ? current[0] : current[^1];
+        var worldPath = CreateStraightWorldPath(endpoint, waitPosition);
+        for (var i = 1; i < current.Count; i++)
+            worldPath.Add(waitPosition);
+
+        for (var i = 1; i < worldPath.Count; i++)
+        {
+            if (fromRootEndpoint)
+            {
+                current.Insert(0, worldPath[i]);
+                current.RemoveAt(current.Count - 1);
+            }
+            else
+            {
+                current.Add(worldPath[i]);
+                current.RemoveAt(0);
+            }
+
+            frames.Add(new List<Vector3>(current));
+        }
+
+        return frames;
+    }
+
+    private List<Vector3> CreateStraightWorldPath(Vector3 start, Vector3 end)
+    {
+        var path = new List<Vector3> { start };
+        var spacing = Mathf.Max(0.01f, Adapter.CellSize);
+        var distance = Vector3.Distance(start, end);
+        var steps = Mathf.Max(1, Mathf.CeilToInt(distance / spacing));
+
+        for (var i = 1; i <= steps; i++)
+            path.Add(Vector3.Lerp(start, end, i / (float)steps));
+
+        return path;
+    }
+
     private void CommitMove(IReadOnlyList<Vector2Int> finalTiles)
     {
         if (Data == null || finalTiles == null || finalTiles.Count == 0)
@@ -433,6 +546,19 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
             activeTween.Kill();
 
         activeTween = null;
+    }
+
+    private void InitializeDispatchYarnUnits(bool force)
+    {
+        if (!force && remainingYarnUnits > 0)
+            return;
+
+        remainingYarnUnits = CalculateTotalYarnUnits();
+    }
+
+    private int CalculateTotalYarnUnits()
+    {
+        return Mathf.Max(0, GetTiles().Count) * YarnUnitsPerTile;
     }
 
     private static List<Vector2Int> CollectTiles(WoolBallData data)

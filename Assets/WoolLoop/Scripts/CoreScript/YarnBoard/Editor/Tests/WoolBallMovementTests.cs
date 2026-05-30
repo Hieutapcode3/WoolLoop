@@ -79,12 +79,21 @@ public sealed class WoolBallMovementTests
     }
 
     [Test]
-    public void CanMoveTo_OwnBody_DoesNotBlockPath()
+    public void CanMoveTo_OpenPathFromEndpoint_RemainsValidWhenOwnBodyExists()
     {
         var context = CreateContext(5, 1);
         var ball = CreateBall(context, 1, Tile(1, 0), Tile(2, 0), Tile(3, 0));
 
         Assert.That(ball.CanMoveTo(Tile(4, 0)), Is.True);
+    }
+
+    [Test]
+    public void CanMoveTo_TargetInsideOwnBody_ReturnsFalse()
+    {
+        var context = CreateContext(5, 1);
+        var ball = CreateBall(context, 1, Tile(1, 0), Tile(2, 0), Tile(3, 0));
+
+        Assert.That(ball.CanMoveTo(Tile(2, 0)), Is.False);
     }
 
     [Test]
@@ -192,6 +201,34 @@ public sealed class WoolBallMovementTests
     }
 
     [Test]
+    public void MoveToTarget_Level001Ball5_DoesNotChooseTailThroughOwnBodyAfterBall3Completes()
+    {
+        var context = CreateContext(
+            7,
+            7,
+            Tile(2, 1), Tile(3, 1), Tile(4, 1),
+            Tile(1, 2), Tile(2, 2), Tile(3, 2), Tile(4, 2), Tile(5, 2),
+            Tile(1, 3), Tile(2, 3), Tile(5, 3),
+            Tile(1, 4), Tile(2, 4), Tile(3, 4), Tile(4, 4), Tile(5, 4),
+            Tile(2, 5), Tile(3, 5), Tile(4, 5),
+            Tile(3, 6)
+        );
+        context.Level.hasTargetExitTileId = true;
+        context.Level.targetExitTileId = Tile(3, 6);
+
+        var ball3 = CreateBall(context, 3, Tile(3, 2), Tile(4, 2), Tile(5, 2));
+        var ball5 = CreateBall(context, 5, Tile(2, 1), Tile(2, 2), Tile(1, 2));
+        CreateBall(context, 6, Tile(3, 4), Tile(2, 4), Tile(2, 5));
+        ball3.Complete();
+
+        var moved = ball5.MoveToTarget().GetAwaiter().GetResult();
+
+        Assert.That(moved, Is.True);
+        Assert.That(ball5.Data.tileId, Is.EqualTo(Tile(3, 6)));
+        Assert.That(ball5.Data.childrenTileIds, Has.No.EqualTo(Tile(2, 2)));
+    }
+
+    [Test]
     public void DispatchUnitCount_UsesGroupTileCount()
     {
         var context = CreateContext(3, 1);
@@ -215,6 +252,27 @@ public sealed class WoolBallMovementTests
         Assert.That(ball.YarnUnitCount, Is.Zero);
         Assert.That(ball.HasYarnRemaining, Is.False);
         Assert.That(ball.Visual.VisiblePieceCount, Is.Zero);
+    }
+
+    [Test]
+    public void ConsumeOneYarnUnit_WithMultipleUnitsPerTile_HidesPieceAfterTileUnitsConsumed()
+    {
+        var context = CreateContext(2, 1);
+        var ball = CreateBall(context, 1, Tile(0, 0), Tile(1, 0));
+        ball.YarnUnitsPerTile = 2;
+        ball.BeginDispatchAtWait(Vector3.zero);
+
+        Assert.That(ball.YarnUnitCount, Is.EqualTo(4));
+
+        ball.ConsumeOneYarnUnit();
+
+        Assert.That(ball.YarnUnitCount, Is.EqualTo(3));
+        Assert.That(ball.Visual.VisiblePieceCount, Is.EqualTo(2));
+
+        ball.ConsumeOneYarnUnit();
+
+        Assert.That(ball.YarnUnitCount, Is.EqualTo(2));
+        Assert.That(ball.Visual.VisiblePieceCount, Is.EqualTo(1));
     }
 
     private TestContext CreateContext(int width, int height, params Vector2Int[] activeTiles)

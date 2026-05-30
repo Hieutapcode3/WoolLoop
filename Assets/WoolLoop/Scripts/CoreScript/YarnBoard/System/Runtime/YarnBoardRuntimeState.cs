@@ -136,8 +136,19 @@ public sealed class YarnBoardRuntimeState
 
     public bool TryFindPath(WoolBall ball, Vector2Int start, Vector2Int target, out List<Vector2Int> path)
     {
+        return TryFindPath(ball, start, target, null, out path);
+    }
+
+    public bool TryFindPath(
+        WoolBall ball,
+        Vector2Int start,
+        Vector2Int target,
+        IReadOnlyCollection<Vector2Int> blockedTiles,
+        out List<Vector2Int> path
+    )
+    {
         path = null;
-        if (!IsWalkableFor(ball, start) || !IsWalkableFor(ball, target))
+        if (!IsPathTileAllowed(ball, start, blockedTiles) || !IsPathTileAllowed(ball, target, blockedTiles))
             return false;
 
         var queue = new Queue<Vector2Int>();
@@ -159,13 +170,36 @@ public sealed class YarnBoardRuntimeState
             for (var i = 0; i < Directions.Length; i++)
             {
                 var next = current + Directions[i];
-                if (visited.Contains(next) || !IsWalkableFor(ball, next))
+                if (visited.Contains(next) || !IsPathTileAllowed(ball, next, blockedTiles))
                     continue;
 
                 visited.Add(next);
                 previous[next] = current;
                 queue.Enqueue(next);
             }
+        }
+
+        return false;
+    }
+
+    private bool IsPathTileAllowed(
+        WoolBall ball,
+        Vector2Int tile,
+        IReadOnlyCollection<Vector2Int> blockedTiles
+    )
+    {
+        return IsWalkableFor(ball, tile) && !ContainsTile(blockedTiles, tile);
+    }
+
+    private static bool ContainsTile(IReadOnlyCollection<Vector2Int> tiles, Vector2Int tile)
+    {
+        if (tiles == null)
+            return false;
+
+        foreach (var candidate in tiles)
+        {
+            if (candidate == tile)
+                return true;
         }
 
         return false;
