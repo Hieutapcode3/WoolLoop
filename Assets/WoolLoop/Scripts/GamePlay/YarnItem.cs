@@ -42,6 +42,13 @@ public class YarnItem : MonoBehaviour
         SetDisplayColor(ColorsParamSO.GetColor(colorType));
         CacheBoneOriginalScales();
     }
+
+    public void InitializeByPaletteIndex(int colorId)
+    {
+        colorType = ColorsParamSO.GetColorTypeByPaletteIndex(colorId);
+        SetDisplayColor(ColorsParamSO.GetColorByPaletteIndex(colorId));
+        CacheBoneOriginalScales();
+    }
     public void SetColorType(WoolColorType type) => colorType = type;
     public void SetDisplayColor(Color color)
     {
@@ -66,7 +73,6 @@ public class YarnItem : MonoBehaviour
     {
         if (parentSpot != null)
             parentSpot.ReleaseYarnItem(this);
-        ConveyorEntrance entrance = FindFirstObjectByType<ConveyorEntrance>();
     }
     private void CacheBoneOriginalScales()
     {

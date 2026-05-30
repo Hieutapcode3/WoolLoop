@@ -6,7 +6,7 @@ using DG.Tweening;
 using BoardSpline.Runtime;
 using UnityEngine;
 
-public class WoolBall : MonoBehaviour, IRuntimeCreatable
+public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
 {
     private sealed class MovePlan
     {
@@ -22,8 +22,13 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable
     [SerializeField, Min(0f)] private float stepDuration = 0.12f;
 
     private YarnBoardRuntimeState runtimeState;
+    private ConveyorEntrance conveyorEntrance;
     private Tween activeTween;
+    private Tween entranceTween;
     private bool isRegistered;
+    private bool isMovingIntoEntrance;
+    private bool isDispatchingAtWait;
+    private int remainingYarnUnits;
     private readonly List<BoxCollider> interactionColliders = new();
 
     public WoolBallData Data { get; private set; }
@@ -31,6 +36,16 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable
     public WoolBallVisual Visual { get; private set; }
     public bool IsMoving { get; private set; }
     public bool IsCompleted { get; private set; }
+    public bool IsPendingCleanup { get; private set; }
+    public bool IsMovingIntoEntrance => isMovingIntoEntrance;
+    public bool IsDispatchingAtWait => isDispatchingAtWait;
+    public int ColorId => Data != null ? Data.ColorId : 0;
+    public int YarnUnitCount =>
+        isMovingIntoEntrance || isDispatchingAtWait ? remainingYarnUnits : Mathf.Max(remainingYarnUnits, GetTiles().Count);
+    public bool HasYarnRemaining =>
+        isMovingIntoEntrance || isDispatchingAtWait
+            ? remainingYarnUnits > 0
+            : !IsCompleted && !IsPendingCleanup && GetTiles().Count > 0;
     public float StepDuration
     {
         get => stepDuration;
@@ -47,6 +62,7 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable
         Data = createParameters.Data;
         Adapter = createParameters.Adapter;
         runtimeState = createParameters.RuntimeState ?? new YarnBoardRuntimeState(null, Adapter);
+        conveyorEntrance = createParameters.ConveyorEntrance;
         transform.localPosition = Adapter.IndexToWorld(Data.tileId);
 
         Visual = GetComponentInChildren<WoolBallVisual>(true);
@@ -117,15 +133,69 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable
         return MoveTo(runtimeState.Level.targetExitTileId);
     }
 
+    public void MoveIntoConveyorEntrance(ConveyorEntrance entrance, Vector3 waitPosition, float duration)
+    {
+        if (entrance == null || IsCompleted || IsPendingCleanup)
+            return;
+
+        conveyorEntrance = entrance;
+        remainingYarnUnits = Mathf.Max(0, GetTiles().Count);
+        if (remainingYarnUnits <= 0)
+            return;
+
+        entranceTween?.Kill();
+        isMovingIntoEntrance = true;
+        SetInteractionCollidersEnabled(false);
+
+        entranceTween = transform
+            .DOMove(waitPosition, duration)
+            .SetEase(Ease.OutQuad)
+            .OnComplete(() =>
+            {
+                isMovingIntoEntrance = false;
+                entrance.OnWoolBallArrived(this);
+            });
+    }
+
+    public void BeginDispatchAtWait(Vector3 waitPosition)
+    {
+        if (remainingYarnUnits <= 0)
+            remainingYarnUnits = Mathf.Max(0, GetTiles().Count);
+
+        isMovingIntoEntrance = false;
+        isDispatchingAtWait = true;
+        entranceTween?.Kill();
+        transform.position = waitPosition;
+    }
+
+    public void ConsumeOneYarnUnit()
+    {
+        if (remainingYarnUnits <= 0 && !isDispatchingAtWait)
+            remainingYarnUnits = Mathf.Max(0, GetTiles().Count);
+
+        if (remainingYarnUnits <= 0)
+            return;
+
+        remainingYarnUnits = Mathf.Max(0, remainingYarnUnits - 1);
+        Visual?.HideNextVisiblePiece();
+    }
+
     public void Complete()
     {
         if (IsCompleted)
             return;
 
         IsCompleted = true;
+        IsPendingCleanup = true;
         IsMoving = false;
+        isMovingIntoEntrance = false;
+        isDispatchingAtWait = false;
         KillActiveTween();
+        entranceTween?.Kill();
+        Visual?.SetAllPiecesVisible(false);
         SetInteractionCollidersEnabled(false);
+        conveyorEntrance?.ReleaseActiveDispatchingBall(this);
+        remainingYarnUnits = 0;
         runtimeState?.Unregister(this);
         isRegistered = false;
         OnCompleted?.Invoke(this);
@@ -134,6 +204,7 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable
     public void CleanupForLevelUnload()
     {
         KillActiveTween();
+        entranceTween?.Kill();
         runtimeState?.ReleaseReservations(this);
         if (isRegistered)
         {
@@ -144,10 +215,22 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable
 
     public void OnInteract()
     {
-        if (IsMoving || IsCompleted)
+        if (IsMoving || IsCompleted || IsPendingCleanup || isMovingIntoEntrance || isDispatchingAtWait)
             return;
 
-        MoveToTarget().Forget();
+        MoveToTargetAndDispatch().Forget();
+    }
+
+    private async UniTaskVoid MoveToTargetAndDispatch()
+    {
+        if (conveyorEntrance == null || !conveyorEntrance.CanAcceptWoolBallClick)
+            return;
+
+        var moved = await MoveToTarget();
+        if (!moved || conveyorEntrance == null || IsCompleted || IsPendingCleanup)
+            return;
+
+        conveyorEntrance.RequestDispatch(this);
     }
 
     private bool TryBeginMove(Vector2Int target, out MovePlan plan)

@@ -96,6 +96,18 @@ public class ColorsParamSO : ScriptableObject
         return DefaultSetup[index].displayColor;
     }
 
+    public static WoolColorType GetColorTypeByPaletteIndex(int index)
+    {
+        ColorsParamSO param = asset.Value;
+        if (param != null && param.TryGetColorByPaletteIndex(index, out WoolColorType woolColor, out _))
+            return woolColor;
+
+        if (index < 0 || index >= DefaultSetup.Length)
+            return WoolColorType.White;
+
+        return DefaultSetup[index].woolColor;
+    }
+
     private void OnValidate()
     {
         _cachedPalette = null;

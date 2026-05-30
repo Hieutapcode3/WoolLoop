@@ -133,9 +133,11 @@ public sealed class WoolBallMovementTests
         completed.Complete();
 
         Assert.That(completed.IsCompleted, Is.True);
+        Assert.That(completed.IsPendingCleanup, Is.True);
         Assert.That(completed.CanMoveTo(Tile(1, 0)), Is.False);
         Assert.That(other.CanMoveTo(Tile(0, 0)), Is.True);
         Assert.That(completed.GetComponents<BoxCollider>(), Has.All.Matches<BoxCollider>(collider => !collider.enabled));
+        Assert.That(completed.Visual.VisiblePieceCount, Is.Zero);
     }
 
     [Test]
@@ -187,6 +189,32 @@ public sealed class WoolBallMovementTests
 
         Assert.That(moved, Is.True);
         Assert.That(ball.Data.tileId, Is.EqualTo(Tile(2, 0)));
+    }
+
+    [Test]
+    public void DispatchUnitCount_UsesGroupTileCount()
+    {
+        var context = CreateContext(3, 1);
+        var ball = CreateBall(context, 1, Tile(0, 0), Tile(1, 0), Tile(2, 0));
+
+        Assert.That(ball.YarnUnitCount, Is.EqualTo(3));
+        Assert.That(ball.HasYarnRemaining, Is.True);
+    }
+
+    [Test]
+    public void ConsumeOneYarnUnit_HidesOneVisualPieceAndReachesZero()
+    {
+        var context = CreateContext(3, 1);
+        var ball = CreateBall(context, 1, Tile(0, 0), Tile(1, 0), Tile(2, 0));
+        ball.BeginDispatchAtWait(Vector3.zero);
+
+        ball.ConsumeOneYarnUnit();
+        ball.ConsumeOneYarnUnit();
+        ball.ConsumeOneYarnUnit();
+
+        Assert.That(ball.YarnUnitCount, Is.Zero);
+        Assert.That(ball.HasYarnRemaining, Is.False);
+        Assert.That(ball.Visual.VisiblePieceCount, Is.Zero);
     }
 
     private TestContext CreateContext(int width, int height, params Vector2Int[] activeTiles)

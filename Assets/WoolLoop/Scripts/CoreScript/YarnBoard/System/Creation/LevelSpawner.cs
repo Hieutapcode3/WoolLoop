@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Common;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ public class LevelSpawner : MonoBehaviour
     [SerializeField] private bool autoSpawnOnStart = true;
     [SerializeField] private bool clearBeforeSpawn = true;
     [SerializeField] private Transform spawnRoot;
+    [SerializeField] private ConveyorEntrance conveyorEntrance;
     [SerializeField] private string resourceFolder = "Levels";
 
     private readonly BottomBoardFactory bottomBoardFactory = new();
@@ -44,6 +46,10 @@ public class LevelSpawner : MonoBehaviour
             runtimeState = null;
             return;
         }
+
+        var pendingCleanup = currentLevelRoot.GetComponentsInChildren<IPendingCleanup>(true);
+        for (var i = 0; i < pendingCleanup.Length; i++)
+            pendingCleanup[i]?.CleanupForLevelUnload();
 
         if (Application.isPlaying)
             Destroy(currentLevelRoot);
@@ -88,7 +94,13 @@ public class LevelSpawner : MonoBehaviour
             var ballData = level.yarnBalls[i];
             if (ballData == null) continue;
 
-            await woolBallFactory.Create(new WoolBallCreateParameters(ballData, adapter, currentLevelRoot.transform, runtimeState), token);
+            await woolBallFactory.Create(new WoolBallCreateParameters(
+                ballData,
+                adapter,
+                currentLevelRoot.transform,
+                runtimeState,
+                conveyorEntrance
+            ), token);
         }
     }
 
