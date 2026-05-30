@@ -3,6 +3,23 @@ using UnityEngine.UIElements;
 
 public partial class YarnBoardEditorWindow
 {
+    private void RefreshWorkspacePreview()
+    {
+        if (_currentTab == LevelEditTab.YarnBoard)
+        {
+            RefreshBoardPreview();
+            return;
+        }
+
+        if (_currentTab == LevelEditTab.YarnConveyor)
+        {
+            RefreshConveyorPreview();
+            return;
+        }
+
+        RefreshBobbinsPreview();
+    }
+
     private void RefreshBoardPreview()
     {
         _boardPreviewRoot.Clear();
@@ -100,5 +117,14 @@ public partial class YarnBoardEditorWindow
         if (_colorsParam != null)
             return _colorsParam.ColorCount;
         return ColorsParamSO.Count();
+    }
+
+    private void RefreshBobbinsPreview()
+    {
+        _boardPreviewRoot.Clear();
+        _cellViews.Clear();
+        Label label = new Label("Bobbins editor is planned for a later phase.");
+        label.AddToClassList("empty-state");
+        _boardPreviewRoot.Add(label);
     }
 }

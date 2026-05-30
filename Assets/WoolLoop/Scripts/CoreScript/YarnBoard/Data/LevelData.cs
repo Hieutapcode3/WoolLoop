@@ -11,6 +11,7 @@ public sealed class LevelData
     public List<WoolBallData> yarnBalls;
     public bool hasTargetExitTileId;
     public Vector2Int targetExitTileId;
+    public YarnConveyorData yarnConveyor;
     public GlobalYarnBoardSetting boardSetting;
 
     public bool IsValidTileIndex(int index)

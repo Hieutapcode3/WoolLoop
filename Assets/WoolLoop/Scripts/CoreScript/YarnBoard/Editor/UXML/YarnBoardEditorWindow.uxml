@@ -13,20 +13,58 @@
 
         <ui:VisualElement class="workspace-panel">
             <ui:VisualElement class="toolbar">
-                <ui:VisualElement class="toolbar-group">
-                    <ui:IntegerField name="rowsField" label="Rows" class="size-field" />
-                    <ui:IntegerField name="columnsField" label="Columns" class="size-field" />
+                <ui:VisualElement class="toolbar-section tab-group">
+                    <ui:Label text="Mode" class="toolbar-label" />
+                    <ui:VisualElement class="toolbar-row">
+                        <ui:Button name="yarnBoardTab" text="Board" class="tool-button selected" />
+                        <ui:Button name="yarnConveyorTab" text="Conveyor" class="tool-button" />
+                        <ui:Button name="bobbinsTab" text="Bobbins" class="tool-button" />
+                    </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement class="toolbar-group tool-group">
-                    <ui:Button name="selectTool" text="Select" class="tool-button selected" />
-                    <ui:Button name="paintTool" text="Paint" class="tool-button" />
-                    <ui:Button name="eraseTool" text="Erase" class="tool-button" />
-                    <ui:Button name="yarnTool" text="Yarn Ball" class="tool-button" />
+                <ui:VisualElement name="boardSizeGroup" class="toolbar-section">
+                    <ui:Label text="Board Size" class="toolbar-label" />
+                    <ui:VisualElement class="toolbar-row">
+                        <ui:IntegerField name="rowsField" label="Rows" class="size-field" />
+                        <ui:IntegerField name="columnsField" label="Columns" class="size-field" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="boardToolGroup" class="toolbar-section tool-group">
+                    <ui:Label text="Board Tools" class="toolbar-label" />
+                    <ui:VisualElement class="toolbar-row">
+                        <ui:Button name="selectTool" text="Pick" class="tool-button selected" />
+                        <ui:Button name="paintTool" text="+ Tile" class="tool-button" />
+                        <ui:Button name="eraseTool" text="x Tile" class="tool-button" />
+                        <ui:Button name="yarnTool" text="+ Yarn" class="tool-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="conveyorToolGroup" class="toolbar-section tool-group">
+                    <ui:Label text="Point Edit" class="toolbar-label" />
+                    <ui:VisualElement class="toolbar-row">
+                        <ui:Button name="conveyorSelectPointTool" text="Pick" class="tool-button selected" />
+                        <ui:Button name="conveyorAddPointTool" text="+ Point" class="tool-button" />
+                        <ui:Button name="conveyorMovePointTool" text="Move" class="tool-button" />
+                        <ui:Button name="conveyorDeletePointTool" text="x Point" class="tool-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="conveyorActionGroup" class="toolbar-section tool-group">
+                    <ui:Label text="Path Output" class="toolbar-label" />
+                    <ui:VisualElement class="toolbar-row">
+                        <ui:Button name="conveyorSnapButton" text="Snap On" class="tool-button selected" />
+                        <ui:Button name="conveyorLoopButton" text="Loop Off" class="tool-button" />
+                        <ui:Button name="conveyorBuildPreviewButton" text="Preview" class="tool-button" />
+                        <ui:Button name="conveyorApplyBuilderButton" text="Apply" class="tool-button" />
+                        <ui:Button name="conveyorClearPathButton" text="Clear" class="tool-button" />
+                    </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement class="toolbar-spacer" />
-                <ui:Button name="loadButton" text="Load JSON" class="button secondary" />
-                <ui:Button name="saveAsButton" text="Save As" class="button secondary" />
-                <ui:Button name="saveButton" text="Save JSON" class="button primary" />
+                <ui:VisualElement class="toolbar-section file-group">
+                    <ui:Label text="File" class="toolbar-label" />
+                    <ui:VisualElement class="toolbar-row">
+                        <ui:Button name="loadButton" text="Load" class="button secondary" />
+                        <ui:Button name="saveAsButton" text="Save As" class="button secondary" />
+                        <ui:Button name="saveButton" text="Save" class="button primary" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
             </ui:VisualElement>
 
             <ui:VisualElement name="boardPreviewRoot" class="board-preview-root">
@@ -44,7 +82,9 @@
         <ui:VisualElement class="panel inspector-panel">
             <ui:Label text="Inspector" class="panel-title" />
             <ui:VisualElement name="validationPanel" class="validation-panel" />
-            <ui:VisualElement name="inspectorContent" class="inspector-content" />
+            <ui:ScrollView name="inspectorScroll" mode="Vertical" class="inspector-scroll">
+                <ui:VisualElement name="inspectorContent" class="inspector-content" />
+            </ui:ScrollView>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

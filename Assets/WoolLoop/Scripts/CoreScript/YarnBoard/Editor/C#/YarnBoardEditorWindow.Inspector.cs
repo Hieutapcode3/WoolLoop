@@ -14,6 +14,19 @@ public partial class YarnBoardEditorWindow
             return;
         }
 
+        if (_currentTab == LevelEditTab.YarnConveyor)
+        {
+            DrawConveyorInspector();
+            return;
+        }
+
+        if (_currentTab == LevelEditTab.Bobbins)
+        {
+            AddSectionTitle("Bobbins");
+            AddEmptyState("Bobbins editor is planned for a later phase.");
+            return;
+        }
+
         if (_selectedYarnBall != null)
         {
             DrawYarnBallInspector();
@@ -216,18 +229,27 @@ public partial class YarnBoardEditorWindow
 
         if (_selectedYarnBall.childrenTileIds != null)
         {
+            AddSectionTitle($"Children ({_selectedYarnBall.childrenTileIds.Count})");
+            VisualElement childGrid = new VisualElement();
+            childGrid.AddToClassList("child-chip-grid");
+            _inspectorContent.Add(childGrid);
+
             for (int i = 0; i < _selectedYarnBall.childrenTileIds.Count; i++)
             {
                 int index = i;
                 VisualElement row = new VisualElement();
-                row.AddToClassList("child-row");
+                row.AddToClassList("child-chip");
+                row.EnableInClassList("selected", _selectedYarnBall.childrenTileIds[index] == _selectedCell);
 
-                VisualElement header = new VisualElement();
-                header.AddToClassList("child-header");
-
-                Label childLabel = new Label($"Child {i + 1}");
-                childLabel.AddToClassList("child-label");
-                header.Add(childLabel);
+                Vector2Int child = _selectedYarnBall.childrenTileIds[index];
+                Label childLabel = new Label($"{index + 1}: ({child.x},{child.y})");
+                childLabel.AddToClassList("child-chip-label");
+                childLabel.RegisterCallback<PointerDownEvent>(_ =>
+                {
+                    _selectedCell = _selectedYarnBall.childrenTileIds[index];
+                    RefreshAll();
+                });
+                row.Add(childLabel);
 
                 Button removeChild = new Button(() =>
                 {
@@ -239,36 +261,9 @@ public partial class YarnBoardEditorWindow
                 };
                 removeChild.AddToClassList("button");
                 removeChild.AddToClassList("icon-button");
-                header.Add(removeChild);
-                row.Add(header);
+                row.Add(removeChild);
 
-                VisualElement inputRow = new VisualElement();
-                inputRow.AddToClassList("child-input-row");
-
-                IntegerField childX = new IntegerField("X");
-                childX.AddToClassList("child-input");
-                childX.value = _selectedYarnBall.childrenTileIds[i].x;
-                childX.RegisterValueChangedCallback(evt =>
-                {
-                    Vector2Int current = _selectedYarnBall.childrenTileIds[index];
-                    _selectedYarnBall.childrenTileIds[index] = new Vector2Int(evt.newValue, current.y);
-                    MarkDirty();
-                });
-                inputRow.Add(childX);
-
-                IntegerField childY = new IntegerField("Y");
-                childY.AddToClassList("child-input");
-                childY.value = _selectedYarnBall.childrenTileIds[i].y;
-                childY.RegisterValueChangedCallback(evt =>
-                {
-                    Vector2Int current = _selectedYarnBall.childrenTileIds[index];
-                    _selectedYarnBall.childrenTileIds[index] = new Vector2Int(current.x, evt.newValue);
-                    MarkDirty();
-                });
-                inputRow.Add(childY);
-                row.Add(inputRow);
-
-                _inspectorContent.Add(row);
+                childGrid.Add(row);
             }
         }
 

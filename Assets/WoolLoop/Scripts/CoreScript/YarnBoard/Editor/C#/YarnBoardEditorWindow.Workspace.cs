@@ -1,3 +1,4 @@
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -5,18 +6,44 @@ public partial class YarnBoardEditorWindow
 {
     private void BindWorkspace()
     {
+        _yarnBoardTab.clicked += () => SetTab(LevelEditTab.YarnBoard);
+        _yarnConveyorTab.clicked += () => SetTab(LevelEditTab.YarnConveyor);
+        _bobbinsTab.clicked += () => SetTab(LevelEditTab.Bobbins);
         _selectTool.clicked += () => SetTool(EditorToolMode.Select);
         _paintTool.clicked += () => SetTool(EditorToolMode.Paint);
         _eraseTool.clicked += () => SetTool(EditorToolMode.Erase);
         _yarnTool.clicked += () => SetTool(EditorToolMode.YarnBall);
+        _conveyorSelectPointTool.clicked += () => SetConveyorTool(ConveyorToolMode.SelectPoint);
+        _conveyorAddPointTool.clicked += () => SetConveyorTool(ConveyorToolMode.AddPoint);
+        _conveyorMovePointTool.clicked += () => SetConveyorTool(ConveyorToolMode.MovePoint);
+        _conveyorDeletePointTool.clicked += () => SetConveyorTool(ConveyorToolMode.DeletePoint);
+        _conveyorSnapButton.clicked += ToggleConveyorSnap;
+        _conveyorLoopButton.clicked += ToggleConveyorLoop;
+        _conveyorBuildPreviewButton.clicked += BuildConveyorPreview;
+        _conveyorApplyBuilderButton.clicked += ApplyConveyorToSelectedBuilder;
+        _conveyorClearPathButton.clicked += ClearConveyorPath;
         _loadButton.clicked += LoadJsonWithPicker;
         _saveButton.clicked += SaveCurrentLevel;
         _saveAsButton.clicked += SaveCurrentLevelAs;
+        ConfigureToolbarIconButtons();
 
         _rowsField.RegisterValueChangedCallback(evt => ResizeBoard(_currentLevel != null ? _currentLevel.size.x : 1, evt.newValue));
         _columnsField.RegisterValueChangedCallback(evt => ResizeBoard(evt.newValue, _currentLevel != null ? _currentLevel.size.y : 1));
         rootVisualElement.RegisterCallback<PointerUpEvent>(_ => EndDrag());
         rootVisualElement.RegisterCallback<PointerLeaveEvent>(_ => EndDrag());
+    }
+
+    private void SetTab(LevelEditTab tab)
+    {
+        if (_currentTab == tab)
+            return;
+
+        _currentTab = tab;
+        EndDrag();
+        _selectedYarnBall = null;
+        _selectedCell = new Vector2Int(-1, -1);
+        _selectedConveyorPoint = -1;
+        RefreshAll();
     }
 
     private void SetTool(EditorToolMode tool)
@@ -25,15 +52,43 @@ public partial class YarnBoardEditorWindow
         RefreshToolbarState();
     }
 
+    private void SetConveyorTool(ConveyorToolMode tool)
+    {
+        _currentConveyorTool = tool;
+        RefreshToolbarState();
+        SceneView.RepaintAll();
+    }
+
     private void RefreshToolbarState()
     {
         bool hasLevel = _currentLevel != null;
-        _rowsField.SetEnabled(hasLevel);
-        _columnsField.SetEnabled(hasLevel);
-        _selectTool.SetEnabled(hasLevel);
-        _paintTool.SetEnabled(hasLevel);
-        _eraseTool.SetEnabled(hasLevel);
-        _yarnTool.SetEnabled(hasLevel);
+        bool isBoard = _currentTab == LevelEditTab.YarnBoard;
+        bool isConveyor = _currentTab == LevelEditTab.YarnConveyor;
+
+        _yarnBoardTab.EnableInClassList("selected", isBoard);
+        _yarnConveyorTab.EnableInClassList("selected", isConveyor);
+        _bobbinsTab.EnableInClassList("selected", _currentTab == LevelEditTab.Bobbins);
+
+        _boardSizeGroup.style.display = isBoard ? DisplayStyle.Flex : DisplayStyle.None;
+        _boardToolGroup.style.display = isBoard ? DisplayStyle.Flex : DisplayStyle.None;
+        _conveyorToolGroup.style.display = isConveyor ? DisplayStyle.Flex : DisplayStyle.None;
+        _conveyorActionGroup.style.display = isConveyor ? DisplayStyle.Flex : DisplayStyle.None;
+
+        _rowsField.SetEnabled(hasLevel && isBoard);
+        _columnsField.SetEnabled(hasLevel && isBoard);
+        _selectTool.SetEnabled(hasLevel && isBoard);
+        _paintTool.SetEnabled(hasLevel && isBoard);
+        _eraseTool.SetEnabled(hasLevel && isBoard);
+        _yarnTool.SetEnabled(hasLevel && isBoard);
+        _conveyorSelectPointTool.SetEnabled(hasLevel && isConveyor);
+        _conveyorAddPointTool.SetEnabled(hasLevel && isConveyor);
+        _conveyorMovePointTool.SetEnabled(hasLevel && isConveyor);
+        _conveyorDeletePointTool.SetEnabled(hasLevel && isConveyor);
+        _conveyorSnapButton.SetEnabled(hasLevel && isConveyor);
+        _conveyorLoopButton.SetEnabled(hasLevel && isConveyor);
+        _conveyorBuildPreviewButton.SetEnabled(hasLevel && isConveyor);
+        _conveyorApplyBuilderButton.SetEnabled(hasLevel && isConveyor);
+        _conveyorClearPathButton.SetEnabled(hasLevel && isConveyor);
         _saveButton.SetEnabled(hasLevel && _validationErrors.Count == 0);
         _saveAsButton.SetEnabled(hasLevel && _validationErrors.Count == 0);
         _duplicateLevelButton.SetEnabled(hasLevel);
@@ -43,12 +98,71 @@ public partial class YarnBoardEditorWindow
         _paintTool.EnableInClassList("selected", _currentTool == EditorToolMode.Paint);
         _eraseTool.EnableInClassList("selected", _currentTool == EditorToolMode.Erase);
         _yarnTool.EnableInClassList("selected", _currentTool == EditorToolMode.YarnBall);
+        _conveyorSelectPointTool.EnableInClassList("selected", _currentConveyorTool == ConveyorToolMode.SelectPoint);
+        _conveyorAddPointTool.EnableInClassList("selected", _currentConveyorTool == ConveyorToolMode.AddPoint);
+        _conveyorMovePointTool.EnableInClassList("selected", _currentConveyorTool == ConveyorToolMode.MovePoint);
+        _conveyorDeletePointTool.EnableInClassList("selected", _currentConveyorTool == ConveyorToolMode.DeletePoint);
+        _conveyorSnapButton.EnableInClassList("selected", _conveyorSnapToGrid);
+        _conveyorLoopButton.EnableInClassList("selected", false);
 
         if (_currentLevel != null)
         {
             _rowsField.SetValueWithoutNotify(_currentLevel.size.y);
             _columnsField.SetValueWithoutNotify(_currentLevel.size.x);
+            bool loop = _currentLevel.yarnConveyor != null && _currentLevel.yarnConveyor.loop;
+            _conveyorLoopButton.EnableInClassList("selected", loop);
+            _conveyorLoopButton.tooltip = loop ? "Loop enabled" : "Loop disabled";
         }
+    }
+
+    private void ConfigureToolbarIconButtons()
+    {
+        ConfigureToolbarIconButton(_selectTool, "d_ViewToolOrbit", "Pick", "Pick cell", "info");
+        ConfigureToolbarIconButton(_paintTool, "d_Toolbar Plus", "+", "Add tile", "add");
+        ConfigureToolbarIconButton(_eraseTool, "d_Toolbar Minus", "-", "Remove tile", "danger");
+        ConfigureToolbarIconButton(_yarnTool, "d_CreateAddNew", "+", "Add or edit yarn ball", "accent");
+
+        ConfigureToolbarIconButton(_conveyorSelectPointTool, "d_ViewToolOrbit", "Pick", "Pick point", "info");
+        ConfigureToolbarIconButton(_conveyorAddPointTool, "d_Toolbar Plus", "+", "Add point", "add");
+        ConfigureToolbarIconButton(_conveyorMovePointTool, "d_MoveTool", "Move", "Move point", "accent");
+        ConfigureToolbarIconButton(_conveyorDeletePointTool, "TreeEditor.Trash", "Del", "Delete point", "danger");
+
+        ConfigureToolbarIconButton(_conveyorSnapButton, "d_Grid.BoxTool", "Snap", "Snap to grid", "info");
+        ConfigureToolbarIconButton(_conveyorLoopButton, "d_Refresh", "Loop", "Toggle loop", "accent");
+        ConfigureToolbarIconButton(_conveyorBuildPreviewButton, "d_PlayButton", "Preview", "Build preview", "add");
+        ConfigureToolbarIconButton(_conveyorApplyBuilderButton, "d_FilterSelectedOnly", "Apply", "Apply to selected builder", "confirm");
+        ConfigureToolbarIconButton(_conveyorClearPathButton, "d_TreeEditor.Trash", "Clear", "Clear current layout", "danger");
+
+        ConfigureToolbarIconButton(_loadButton, "d_FolderOpened Icon", "Load", "Load JSON", "file");
+        ConfigureToolbarIconButton(_saveAsButton, "d_SaveAs", "Save As", "Save JSON as", "file");
+        ConfigureToolbarIconButton(_saveButton, "d_SaveActive", "Save", "Save JSON", "confirm");
+    }
+
+    private static void ConfigureToolbarIconButton(
+        Button button,
+        string unityIconName,
+        string fallbackText,
+        string tooltip,
+        string tone
+    )
+    {
+        if (button == null)
+            return;
+
+        GUIContent iconContent = EditorGUIUtility.IconContent(unityIconName);
+        if (iconContent?.image is Texture2D iconTexture)
+        {
+            button.text = string.Empty;
+            button.style.backgroundImage = iconTexture;
+        }
+        else
+        {
+            button.text = fallbackText;
+        }
+
+        button.tooltip = tooltip;
+        button.AddToClassList("toolbar-icon-button");
+        button.AddToClassList($"toolbar-icon-{tone}");
     }
 
     private void ResizeBoard(int columns, int rows)

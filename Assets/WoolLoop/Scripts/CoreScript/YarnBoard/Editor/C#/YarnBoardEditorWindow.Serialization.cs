@@ -12,6 +12,7 @@ public partial class YarnBoardEditorWindow
             size = new Vector2Int(8, 8),
             tileData = new bool[64],
             yarnBalls = new System.Collections.Generic.List<WoolBallData>(),
+            yarnConveyor = new YarnConveyorData(),
             boardSetting = new GlobalYarnBoardSetting
             {
                 centerPos = Vector3.zero,

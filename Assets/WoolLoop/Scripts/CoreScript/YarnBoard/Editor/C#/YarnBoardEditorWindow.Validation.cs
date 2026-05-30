@@ -8,6 +8,7 @@ public partial class YarnBoardEditorWindow
     private void ValidateCurrentLevel()
     {
         _validationErrors.Clear();
+        _conveyorWarnings.Clear();
         _errorCells.Clear();
 
         if (_currentLevel == null)
@@ -41,6 +42,20 @@ public partial class YarnBoardEditorWindow
             foreach (Vector2Int child in ball.childrenTileIds)
                 ValidateBallCell(ball, child, occupiedCells, false);
         }
+
+        ValidateYarnConveyor();
+    }
+
+    private void ValidateYarnConveyor()
+    {
+        YarnConveyorValidationResult result = YarnConveyorEditorUtility.Validate(
+            _currentLevel.yarnConveyor,
+            GetSelectedConveyorBuilder()
+        );
+
+        _validationErrors.AddRange(result.Errors);
+        if (_currentTab == LevelEditTab.YarnConveyor)
+            _conveyorWarnings.AddRange(result.Warnings);
     }
 
     private void ValidateTargetExitCell()
@@ -94,7 +109,7 @@ public partial class YarnBoardEditorWindow
     private void RefreshValidationPanel()
     {
         _validationPanel.Clear();
-        if (_validationErrors.Count == 0)
+        if (_validationErrors.Count == 0 && _conveyorWarnings.Count == 0)
             return;
 
         foreach (string error in _validationErrors.Take(6))
@@ -104,9 +119,18 @@ public partial class YarnBoardEditorWindow
             _validationPanel.Add(label);
         }
 
-        if (_validationErrors.Count > 6)
+        foreach (string warning in _conveyorWarnings.Take(Mathf.Max(0, 6 - _validationErrors.Count)))
         {
-            Label label = new Label($"+ {_validationErrors.Count - 6} more");
+            Label label = new Label(warning);
+            label.AddToClassList("validation-item");
+            label.AddToClassList("subtle");
+            _validationPanel.Add(label);
+        }
+
+        int hiddenCount = Mathf.Max(0, _validationErrors.Count + _conveyorWarnings.Count - 6);
+        if (hiddenCount > 0)
+        {
+            Label label = new Label($"+ {hiddenCount} more");
             label.AddToClassList("validation-item");
             _validationPanel.Add(label);
         }
@@ -123,12 +147,25 @@ public partial class YarnBoardEditorWindow
             return;
         }
 
-        _validationStatus.text = _validationErrors.Count == 0 ? (_isDirty ? "Unsaved changes" : "Valid") : $"{_validationErrors.Count} error(s)";
+        if (_validationErrors.Count > 0)
+            _validationStatus.text = $"{_validationErrors.Count} error(s)";
+        else if (_conveyorWarnings.Count > 0)
+            _validationStatus.text = _isDirty ? $"Unsaved changes, {_conveyorWarnings.Count} warning(s)" : $"{_conveyorWarnings.Count} warning(s)";
+        else
+            _validationStatus.text = _isDirty ? "Unsaved changes" : "Valid";
         _validationStatus.EnableInClassList("ok", _validationErrors.Count == 0);
         _validationStatus.EnableInClassList("error", _validationErrors.Count > 0);
 
         int activeCells = _currentLevel.tileData == null ? 0 : _currentLevel.tileData.Count(active => active);
         _cellSummary.text = $"{activeCells}/{_currentLevel.size.x * _currentLevel.size.y} cells";
-        _yarnSummary.text = $"{_currentLevel.Balls.Count} yarn balls";
+        if (_currentTab == LevelEditTab.YarnConveyor)
+        {
+            int pointCount = _currentLevel.yarnConveyor?.controlPoints?.Count ?? 0;
+            _yarnSummary.text = $"{pointCount} conveyor points";
+        }
+        else
+        {
+            _yarnSummary.text = $"{_currentLevel.Balls.Count} yarn balls";
+        }
     }
 }

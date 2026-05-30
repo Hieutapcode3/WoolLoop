@@ -45,7 +45,23 @@ namespace Dreamteck.Splines.Editor
 
         protected virtual void HeaderGUI()
         {
+            if (foldoutHeaderStyle == null) foldoutHeaderStyle = EditorStyles.foldout;
+
             SplineUser user = (SplineUser)target;
+            if (user == null) return;
+
+            if (spline == null)
+            {
+                serializedObject.Update();
+                spline = serializedObject.FindProperty("_spline");
+            }
+
+            if (spline == null)
+            {
+                EditorGUILayout.HelpBox("SplineComputer property is unavailable for this SplineUser.", MessageType.Warning);
+                return;
+            }
+
             Undo.RecordObject(user, "Inspector Change");
             SplineComputer lastSpline = (SplineComputer)spline.objectReferenceValue;
             EditorGUILayout.PropertyField(spline);
@@ -361,6 +377,8 @@ namespace Dreamteck.Splines.Editor
 
         protected virtual void OnEnable()
         {
+            foldoutHeaderStyle = EditorStyles.foldout;
+
             SplineUser user = (SplineUser)target;
             
             settingsFoldout = EditorPrefs.GetBool("Dreamteck.Splines.Editor.SplineUserEditor.settingsFoldout", false);
