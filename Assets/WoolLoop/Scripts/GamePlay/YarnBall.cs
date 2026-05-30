@@ -45,10 +45,10 @@ public class YarnBall : MonoBehaviour
         if (conveyorEntrance == null)
             conveyorEntrance = FindFirstObjectByType<ConveyorEntrance>();
 
-        if (conveyorEntrance == null || !conveyorEntrance.CanAcceptYarnBallClick)
-            return;
+        // if (conveyorEntrance == null || !conveyorEntrance.CanAcceptYarnBallClick)
+        //     return;
 
-        conveyorEntrance.RequestDispatch(this);
+        // conveyorEntrance.RequestDispatch(this);
     }
 
     public void MoveToEntrance(ConveyorEntrance entrance, Vector3 waitPosition, float duration)
@@ -65,7 +65,7 @@ public class YarnBall : MonoBehaviour
             .OnComplete(() =>
             {
                 isMovingToEntrance = false;
-                entrance.OnYarnBallArrived(this);
+                // entrance.OnYarnBallArrived(this);
             });
     }
 
@@ -90,7 +90,7 @@ public class YarnBall : MonoBehaviour
         isDispatchingAtWait = false;
         if (conveyorEntrance != null)
         {
-            conveyorEntrance.ReleaseActiveDispatchingBall(this);
+            // conveyorEntrance.ReleaseActiveDispatchingBall(this);
         }
         moveTween?.Kill();
         Destroy(gameObject);

@@ -31,7 +31,7 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
     private bool isDispatchingAtWait;
     private int remainingYarnUnits;
     private readonly List<BoxCollider> interactionColliders = new();
-
+    [SerializeField] private WoolColorType woolColorType = WoolColorType.Red;
     public WoolBallData Data { get; private set; }
     public BoardSplineDataAdapterInfo Adapter { get; private set; }
     public WoolBallVisual Visual { get; private set; }
@@ -40,6 +40,7 @@ public class WoolBall : MonoBehaviour, IRuntimeCreatable, IPendingCleanup
     public bool IsPendingCleanup { get; private set; }
     public bool IsMovingIntoEntrance => isMovingIntoEntrance;
     public bool IsDispatchingAtWait => isDispatchingAtWait;
+    public WoolColorType WoolColorType => woolColorType;
     public int ColorId => Data != null ? Data.ColorId : 0;
     public int YarnUnitsPerTile
     {
