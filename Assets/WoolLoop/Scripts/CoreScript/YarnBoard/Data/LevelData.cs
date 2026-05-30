@@ -9,6 +9,8 @@ public sealed class LevelData
     public Vector2Int size;
     public bool[] tileData;
     public List<WoolBallData> yarnBalls;
+    public bool hasTargetExitTileId;
+    public Vector2Int targetExitTileId;
     public GlobalYarnBoardSetting boardSetting;
 
     public bool IsValidTileIndex(int index)

@@ -30,6 +30,8 @@ public partial class YarnBoardEditorWindow : EditorWindow
         public Vector2Int size = new Vector2Int(8, 8);
         public bool[] tileData = new bool[64];
         public List<WoolBallData> yarnBalls = new List<WoolBallData>();
+        public bool hasTargetExitTileId;
+        public Vector2Int targetExitTileId;
         public GlobalYarnBoardSetting boardSetting = new GlobalYarnBoardSetting
         {
             centerPos = Vector3.zero,

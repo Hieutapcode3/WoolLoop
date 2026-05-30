@@ -55,6 +55,15 @@ public partial class YarnBoardEditorWindow
             cellView.Add(dot);
         }
 
+        if (_currentLevel != null &&
+            _currentLevel.hasTargetExitTileId &&
+            _currentLevel.targetExitTileId == cell)
+        {
+            VisualElement marker = new VisualElement();
+            marker.AddToClassList("target-marker");
+            cellView.Add(marker);
+        }
+
         cellView.RegisterCallback<PointerDownEvent>(evt =>
         {
             if (evt.button != 0)

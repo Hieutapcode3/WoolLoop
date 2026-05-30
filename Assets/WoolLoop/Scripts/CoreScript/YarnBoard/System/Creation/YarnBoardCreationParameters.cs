@@ -18,14 +18,24 @@ public sealed class BottomBoardCreateParameters : ICreateParameters
 
 public sealed class WoolBallCreateParameters : ICreateParameters
 {
-    public WoolBallCreateParameters(WoolBallData data, BoardSplineDataAdapterInfo adapter, Transform parent)
+    public WoolBallCreateParameters(
+        WoolBallData data,
+        BoardSplineDataAdapterInfo adapter,
+        Transform parent,
+        YarnBoardRuntimeState runtimeState = null,
+        ConveyorEntrance conveyorEntrance = null
+    )
     {
         Data = data;
         Adapter = adapter;
         Parent = parent;
+        RuntimeState = runtimeState;
+        ConveyorEntrance = conveyorEntrance;
     }
 
     public WoolBallData Data { get; }
     public BoardSplineDataAdapterInfo Adapter { get; }
     public Transform Parent { get; }
+    public YarnBoardRuntimeState RuntimeState { get; }
+    public ConveyorEntrance ConveyorEntrance { get; }
 }

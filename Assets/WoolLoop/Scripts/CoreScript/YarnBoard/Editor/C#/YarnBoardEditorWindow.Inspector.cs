@@ -80,11 +80,15 @@ public partial class YarnBoardEditorWindow
         });
         _inspectorContent.Add(size);
 
+        DrawTargetExitTileControls();
+
         Button clear = new Button(() =>
         {
             for (int i = 0; i < _currentLevel.tileData.Length; i++)
                 _currentLevel.tileData[i] = false;
             _currentLevel.Balls.Clear();
+            _currentLevel.hasTargetExitTileId = false;
+            _currentLevel.targetExitTileId = Vector2Int.zero;
             MarkDirty();
         })
         {
@@ -132,6 +136,8 @@ public partial class YarnBoardEditorWindow
             selectBall.AddToClassList("secondary");
             _inspectorContent.Add(selectBall);
         }
+
+        DrawTargetExitTileControls();
     }
 
     private void DrawYarnBallInspector()
@@ -279,6 +285,59 @@ public partial class YarnBoardEditorWindow
         remove.AddToClassList("secondary");
         remove.AddToClassList("danger");
         _inspectorContent.Add(remove);
+    }
+
+    private void DrawTargetExitTileControls()
+    {
+        AddSectionTitle("Target Exit Tile");
+
+        Toggle hasTarget = new Toggle("Has Target Exit");
+        hasTarget.value = _currentLevel.hasTargetExitTileId;
+        hasTarget.RegisterValueChangedCallback(evt =>
+        {
+            _currentLevel.hasTargetExitTileId = evt.newValue;
+            MarkDirty();
+        });
+        _inspectorContent.Add(hasTarget);
+
+        Vector2IntField targetTile = new Vector2IntField("Target Exit Tile");
+        targetTile.value = _currentLevel.targetExitTileId;
+        targetTile.SetEnabled(_currentLevel.hasTargetExitTileId);
+        targetTile.RegisterValueChangedCallback(evt =>
+        {
+            _currentLevel.targetExitTileId = evt.newValue;
+            _currentLevel.hasTargetExitTileId = true;
+            MarkDirty();
+        });
+        _inspectorContent.Add(targetTile);
+
+        Button setFromSelected = new Button(() =>
+        {
+            _currentLevel.targetExitTileId = _selectedCell;
+            _currentLevel.hasTargetExitTileId = true;
+            MarkDirty();
+        })
+        {
+            text = "Set Target Exit From Selected Cell"
+        };
+        setFromSelected.SetEnabled(IsInsideBoard(_selectedCell) && IsActiveCell(_selectedCell));
+        setFromSelected.AddToClassList("button");
+        setFromSelected.AddToClassList("secondary");
+        _inspectorContent.Add(setFromSelected);
+
+        Button clearTarget = new Button(() =>
+        {
+            _currentLevel.hasTargetExitTileId = false;
+            _currentLevel.targetExitTileId = Vector2Int.zero;
+            MarkDirty();
+        })
+        {
+            text = "Clear Target Exit"
+        };
+        clearTarget.SetEnabled(_currentLevel.hasTargetExitTileId);
+        clearTarget.AddToClassList("button");
+        clearTarget.AddToClassList("secondary");
+        _inspectorContent.Add(clearTarget);
     }
 
     private void DrawColorPalette()

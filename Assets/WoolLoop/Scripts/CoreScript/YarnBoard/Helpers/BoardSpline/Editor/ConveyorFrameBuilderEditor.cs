@@ -10,16 +10,40 @@ namespace BoardSpline.Editor
     {
         private SerializedProperty centerPaths;
         private SerializedProperty editCenterPath;
+        private bool wasEditingCenterPath;
+        private Tool toolBeforeCenterPathEdit = Tool.Move;
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             centerPaths = serializedObject.FindProperty("centerPaths");
             editCenterPath = serializedObject.FindProperty("editCenterPath");
         }
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
+            var wasEditing = editCenterPath != null && editCenterPath.boolValue;
+
             base.OnInspectorGUI();
+
+            serializedObject.Update();
+            var isEditing = editCenterPath != null && editCenterPath.boolValue;
+            if (!wasEditing && isEditing)
+                EnterCenterPathEditMode();
+            else if (wasEditing && !isEditing)
+                RestoreSceneTool();
+            else if (!isEditing && Tools.current == Tool.None)
+                Tools.current = Tool.Move;
+
+            wasEditingCenterPath = isEditing;
+        }
+
+        protected override void OnDisable()
+        {
+            if (wasEditingCenterPath)
+                RestoreSceneTool();
+            base.OnDisable();
         }
 
         private void OnSceneGUI()
@@ -27,7 +51,22 @@ namespace BoardSpline.Editor
             if (editCenterPath == null || centerPaths == null) return;
 
             serializedObject.Update();
-            if (!editCenterPath.boolValue) return;
+            if (!editCenterPath.boolValue)
+            {
+                if (wasEditingCenterPath)
+                    RestoreSceneTool();
+                else if (Tools.current == Tool.None)
+                    Tools.current = Tool.Move;
+                wasEditingCenterPath = false;
+                return;
+            }
+
+            if (!wasEditingCenterPath)
+                EnterCenterPathEditMode();
+            wasEditingCenterPath = true;
+
+            if (Tools.current != Tool.None)
+                return;
 
             var builder = (CustomFrameBuilder)target;
             var transform = builder.transform;
@@ -52,6 +91,22 @@ namespace BoardSpline.Editor
 
                 Handles.Label(worldPoint, i.ToString());
             }
+        }
+
+        private void EnterCenterPathEditMode()
+        {
+            if (Tools.current != Tool.None)
+                toolBeforeCenterPathEdit = Tools.current;
+            else if (toolBeforeCenterPathEdit == Tool.None)
+                toolBeforeCenterPathEdit = Tool.Move;
+
+            Tools.current = Tool.None;
+        }
+
+        private void RestoreSceneTool()
+        {
+            if (Tools.current == Tool.None)
+                Tools.current = toolBeforeCenterPathEdit == Tool.None ? Tool.Move : toolBeforeCenterPathEdit;
         }
     }
 }
