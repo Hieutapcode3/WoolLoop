@@ -19,11 +19,90 @@ public class ConveyorEntrance : MonoBehaviour
     [SerializeField, Min(0.05f)] private float moveToEntranceDuration = 0.25f;
 
     [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
-    private YarnBall activeDispatchingYarnBall;
+    private WoolBall activeDispatchingWoolBall;
     public bool IsEntranceBusy =>
-        activeDispatchingYarnBall != null;
+        activeDispatchingWoolBall != null;
     public Vector3 WaitPosition => waitPoint != null ? waitPoint.position : transform.position;
-    public bool CanAcceptYarnBallClick => !IsEntranceBusy;
+    public bool CanAcceptWoolBallClick => !IsEntranceBusy;
+
+    private void FixedUpdate()
+    {
+        ProcessActiveDispatchingBall();
+    }
+
+    public void RequestDispatch(WoolBall woolBall)
+    {
+        if (woolBall == null || !woolBall.HasYarnRemaining || !CanAcceptWoolBallClick)
+            return;
+
+        if (conveyorController == null)
+            conveyorController = FindFirstObjectByType<ConveyorController>();
+
+        woolBall.MoveIntoConveyorEntrance(this, WaitPosition, moveToEntranceDuration);
+    }
+
+    public void OnWoolBallArrived(WoolBall woolBall)
+    {
+        if (woolBall == null || yarnItemPrefab == null || waitPoint == null)
+            return;
+
+        if (activeDispatchingWoolBall != null && activeDispatchingWoolBall != woolBall)
+            return;
+
+        activeDispatchingWoolBall = woolBall;
+        woolBall.BeginDispatchAtWait(WaitPosition);
+    }
+
+    public void ReleaseActiveDispatchingBall(WoolBall woolBall)
+    {
+        if (activeDispatchingWoolBall == woolBall)
+            activeDispatchingWoolBall = null;
+    }
+
+    private void ProcessActiveDispatchingBall()
+    {
+        if (activeDispatchingWoolBall == null)
+            return;
+
+        if (!activeDispatchingWoolBall.HasYarnRemaining)
+        {
+            FinishDispatchingBall(activeDispatchingWoolBall);
+            return;
+        }
+
+        TrySpawnYarnDirectToConveyor(activeDispatchingWoolBall);
+    }
+
+    private void FinishDispatchingBall(WoolBall woolBall)
+    {
+        ReleaseActiveDispatchingBall(woolBall);
+        woolBall.Complete();
+    }
+
+    private void TrySpawnYarnDirectToConveyor(WoolBall woolBall)
+    {
+        if (woolBall == null || !woolBall.HasYarnRemaining || yarnItemPrefab == null || conveyorController == null)
+            return;
+
+        if (!conveyorController.TryFindNearestEmptySpotBySlot(WaitPosition, spotSearchSlotDistance, out ConveyorSpot spot))
+            return;
+
+        YarnItem item = Instantiate(yarnItemPrefab, spot.transform);
+        item.transform.localPosition = Vector3.zero;
+        item.transform.localRotation = Quaternion.identity;
+        item.InitializeByPaletteIndex(woolBall.ColorId);
+
+        if (!spot.TryAttachYarnItem(item))
+        {
+            Destroy(item.gameObject);
+            return;
+        }
+
+        woolBall.ConsumeOneYarnUnit();
+        if (!woolBall.HasYarnRemaining)
+            FinishDispatchingBall(woolBall);
+    }
+
 #if UNITY_EDITOR
     [TitleGroup("Gizmos")]
     [SerializeField] private bool showSearchAreaGizmos = true;
@@ -33,85 +112,6 @@ public class ConveyorEntrance : MonoBehaviour
     [SerializeField] private Color inRangeSpotColor = new(0.2f, 1f, 0.3f, 0.85f);
     [SerializeField] private Color occupiedInRangeColor = new(1f, 0.45f, 0.1f, 0.85f);
     [SerializeField] private Color outOfRangeSpotColor = new(1f, 1f, 1f, 0.2f);
-    private void FixedUpdate()
-    {
-        ProcessActiveDispatchingBall();
-    }
-
-    public void RequestDispatch(YarnBall yarnBall)
-    {
-        if (yarnBall == null || !yarnBall.HasYarnRemaining || !CanAcceptYarnBallClick)
-            return;
-
-        if (conveyorController == null)
-            conveyorController = FindFirstObjectByType<ConveyorController>();
-
-        yarnBall.MoveToEntrance(this, WaitPosition, moveToEntranceDuration);
-    }
-
-    public void OnYarnBallArrived(YarnBall yarnBall)
-    {
-        if (yarnBall == null || yarnItemPrefab == null || waitPoint == null)
-            return;
-
-        if (activeDispatchingYarnBall != null && activeDispatchingYarnBall != yarnBall)
-            return;
-
-        activeDispatchingYarnBall = yarnBall;
-        yarnBall.BeginDispatchAtWait();
-    }
-    public void ReleaseActiveDispatchingBall(YarnBall yarnBall)
-    {
-        if (activeDispatchingYarnBall == yarnBall)
-            activeDispatchingYarnBall = null;
-    }
-
-
-
-    private void ProcessActiveDispatchingBall()
-    {
-        if (activeDispatchingYarnBall == null)
-            return;
-
-        if (!activeDispatchingYarnBall.HasYarnRemaining)
-        {
-            // if (!HasYarnItemAtWait)
-            FinishDispatchingBall(activeDispatchingYarnBall);
-            return;
-        }
-
-        TrySpawnYarnDirectToConveyor(activeDispatchingYarnBall);
-    }
-
-    private void FinishDispatchingBall(YarnBall yarnBall)
-    {
-        ReleaseActiveDispatchingBall(yarnBall);
-        yarnBall.CompleteAndDestroy();
-    }
-
-    private void TrySpawnYarnDirectToConveyor(YarnBall yarnBall)
-    {
-        if (yarnBall == null || !yarnBall.HasYarnRemaining || yarnItemPrefab == null || conveyorController == null)
-            return;
-
-        if (!conveyorController.TryFindNearestEmptySpotBySlot(WaitPosition, spotSearchSlotDistance, out ConveyorSpot spot))
-            return;
-
-        YarnItem item = Instantiate(yarnItemPrefab, spot.transform);
-        item.transform.localPosition = Vector3.zero;
-        item.transform.localRotation = Quaternion.identity;
-        item.Initialize(yarnBall.WoolColorType);
-
-        if (!spot.TryAttachYarnItem(item))
-        {
-            Destroy(item.gameObject);
-            return;
-        }
-
-        yarnBall.ConsumeOneYarnUnit();
-    }
-
-
 
     private void OnDrawGizmos()
     {

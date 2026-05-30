@@ -10,8 +10,6 @@ public class YarnBall : MonoBehaviour
     [TitleGroup("Yarn")]
     [SerializeField] private WoolColorType woolColorType = WoolColorType.Red;
     [SerializeField, Min(1)][HideInInspector] private int yarnUnitCount = 10;
-    [TitleGroup("Conveyor")]
-    [SerializeField] private ConveyorEntrance conveyorEntrance;
     [TitleGroup("Visual")]
     [SerializeField][HideInInspector] private Renderer[] rollRenderers;
     [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
@@ -43,18 +41,11 @@ public class YarnBall : MonoBehaviour
     private void HandleClick()
     {
         Debug.Log($"YarnBall clicked. Color: {woolColorType}, Remaining Units: {yarnUnitCount}");
-        if (conveyorEntrance == null)
-            conveyorEntrance = FindFirstObjectByType<ConveyorEntrance>();
-
-        if (conveyorEntrance == null || !conveyorEntrance.CanAcceptYarnBallClick)
-            return;
-
-        conveyorEntrance.RequestDispatch(this);
     }
 
-    public void MoveToEntrance(ConveyorEntrance entrance, Vector3 waitPosition, float duration)
+    public void MoveToEntrance(Vector3 waitPosition, float duration)
     {
-        if (entrance == null || !HasYarnRemaining)
+        if (!HasYarnRemaining)
             return;
 
         moveTween?.Kill();
@@ -66,18 +57,15 @@ public class YarnBall : MonoBehaviour
             .OnComplete(() =>
             {
                 isMovingToEntrance = false;
-                entrance.OnYarnBallArrived(this);
             });
     }
 
-    public void BeginDispatchAtWait()
+    public void BeginDispatchAtWait(Vector3 waitPosition)
     {
         isDispatchingAtWait = true;
         isMovingToEntrance = false;
         moveTween?.Kill();
-        transform.position = conveyorEntrance != null
-            ? conveyorEntrance.WaitPosition
-            : transform.position;
+        transform.position = waitPosition;
     }
 
     public void ConsumeOneYarnUnit()
@@ -89,10 +77,6 @@ public class YarnBall : MonoBehaviour
     {
         isMovingToEntrance = false;
         isDispatchingAtWait = false;
-        if (conveyorEntrance != null)
-        {
-            conveyorEntrance.ReleaseActiveDispatchingBall(this);
-        }
         moveTween?.Kill();
         Destroy(gameObject);
     }

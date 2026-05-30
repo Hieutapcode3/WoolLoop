@@ -1,3 +1,4 @@
+using Common.Helper;
 using DG.Tweening;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -20,7 +21,6 @@ public class YarnItem : MonoBehaviour
     [TitleGroup("Runtime"), ShowInInspector, ReadOnly]
     private ConveyorSpot parentSpot;
 
-    private MaterialPropertyBlock propertyBlock;
     private Vector3 boneUpOriginalScale = Vector3.one;
     private Vector3 boneDownOriginalScale = Vector3.one;
     private bool boneUpScaleCached;
@@ -42,14 +42,20 @@ public class YarnItem : MonoBehaviour
         SetDisplayColor(ColorsParamSO.GetColor(colorType));
         CacheBoneOriginalScales();
     }
+
+    public void InitializeByPaletteIndex(int colorId)
+    {
+        colorType = ColorsParamSO.GetColorTypeByPaletteIndex(colorId);
+        SetDisplayColor(ColorsParamSO.GetColorByPaletteIndex(colorId));
+        CacheBoneOriginalScales();
+    }
     public void SetColorType(WoolColorType type) => colorType = type;
     public void SetDisplayColor(Color color)
     {
         if (targetRenderer == null && !TryGetComponent(out targetRenderer))
             return;
 
-        propertyBlock ??= new MaterialPropertyBlock();
-        YarnBall.ApplyColorWithPropertyBlock(targetRenderer, color, propertyBlock);
+        targetRenderer.SetBaseColor(color);
     }
     private void LateUpdate()
     {
@@ -67,7 +73,6 @@ public class YarnItem : MonoBehaviour
     {
         if (parentSpot != null)
             parentSpot.ReleaseYarnItem(this);
-        ConveyorEntrance entrance = FindFirstObjectByType<ConveyorEntrance>();
     }
     private void CacheBoneOriginalScales()
     {

@@ -11,6 +11,20 @@ public class WoolBallVisual : MonoBehaviour
     private readonly List<Transform> pieceTransforms = new();
 
     public IReadOnlyList<Transform> PieceTransforms => pieceTransforms;
+    public int VisiblePieceCount
+    {
+        get
+        {
+            var count = 0;
+            for (var i = 0; i < pieceTransforms.Count; i++)
+            {
+                if (pieceTransforms[i] != null && pieceTransforms[i].gameObject.activeSelf)
+                    count++;
+            }
+
+            return count;
+        }
+    }
 
     public void Render(WoolBallData data, BoardSplineDataAdapterInfo adapter)
     {
@@ -56,10 +70,65 @@ public class WoolBallVisual : MonoBehaviour
             sequence.Join(pieceTransforms[i].DOLocalMove(
                 TileToLocalPosition(targetTiles[i], adapter, rootWorld),
                 duration
-            ).SetEase(Ease.OutQuad));
+            ).SetEase(Ease.Linear));
         }
 
         return sequence;
+    }
+
+    public Sequence CreateWorldMoveTween(IReadOnlyList<Vector3> targetWorldPositions, float duration)
+    {
+        var sequence = DOTween.Sequence();
+        if (targetWorldPositions == null)
+            return sequence;
+
+        var count = Mathf.Min(pieceTransforms.Count, targetWorldPositions.Count);
+        for (var i = 0; i < count; i++)
+        {
+            if (pieceTransforms[i] == null)
+                continue;
+
+            sequence.Join(pieceTransforms[i]
+                .DOMove(targetWorldPositions[i], duration)
+                .SetEase(Ease.Linear));
+        }
+
+        return sequence;
+    }
+
+    public List<Vector3> GetPieceWorldPositions()
+    {
+        var positions = new List<Vector3>(pieceTransforms.Count);
+        for (var i = 0; i < pieceTransforms.Count; i++)
+        {
+            if (pieceTransforms[i] != null)
+                positions.Add(pieceTransforms[i].position);
+        }
+
+        return positions;
+    }
+
+    public bool HideNextVisiblePiece()
+    {
+        for (var i = pieceTransforms.Count - 1; i >= 0; i--)
+        {
+            if (pieceTransforms[i] == null || !pieceTransforms[i].gameObject.activeSelf)
+                continue;
+
+            pieceTransforms[i].gameObject.SetActive(false);
+            return true;
+        }
+
+        return false;
+    }
+
+    public void SetAllPiecesVisible(bool visible)
+    {
+        for (var i = 0; i < pieceTransforms.Count; i++)
+        {
+            if (pieceTransforms[i] != null)
+                pieceTransforms[i].gameObject.SetActive(visible);
+        }
     }
 
     private static List<Vector2Int> CollectTiles(WoolBallData data)

@@ -40,8 +40,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5462744873285566206}
+  - component: {fileID: 943096551256565215}
   m_Layer: 0
-  m_Name: WhoolBall
+  m_Name: WoolBall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -63,3 +64,17 @@ Transform:
   - {fileID: 7209831826282973161}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &943096551256565215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8492171680620021387}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb5d4545ab1caa44783eeec6886b9320, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stepDuration: 0.12
+  yarnUnitsPerTile: 3
